@@ -1,0 +1,1461 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  <entry>
+    <title>Spring Security系列五：实现图像验证码功能</title>
+    <url>/2020/03/02/Spring%20Security/%E5%9B%BE%E5%BD%A2%E9%AA%8C%E8%AF%81%E7%A0%81/</url>
+    <content><![CDATA[<h2 id="实现图像验证码功能"><a href="#实现图像验证码功能" class="headerlink" title="实现图像验证码功能"></a>实现图像验证码功能</h2><h2 id="开发生成图像验证码接口"><a href="#开发生成图像验证码接口" class="headerlink" title="开发生成图像验证码接口"></a>开发生成图像验证码接口</h2><ol>
+<li>根据随机数生成图片</li>
+<li>将随机数存在Session中</li>
+<li>在将生成的图片写到接口的响应中。</li>
+</ol>
+<h2 id="自定义过滤器链"><a href="#自定义过滤器链" class="headerlink" title="自定义过滤器链"></a>自定义过滤器链</h2><ol>
+<li>新建ValidateCodeFilter类继承自OncePerRequestFilter</li>
+<li>实现doFilterInternal()方法，编写检验逻辑。<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">doFilterInternal</span><span class="params">(HttpServletRequest request, HttpServletResponse response,</span></span></span><br><span class="line"><span class="function"><span class="params">                                    FilterChain filterChain)</span> <span class="keyword">throws</span> ServletException, IOException </span>&#123;</span><br><span class="line">        <span class="comment">//当请求路径为/authentication/form，且请求为POST请求时，才执行验证。（对应登录页面发送的请求）</span></span><br><span class="line">        <span class="keyword">if</span> (StringUtils.equals(<span class="string">"/authentication/form"</span>, request.getRequestURI())</span><br><span class="line">                &amp;&amp; StringUtils.equals(request.getMethod(), <span class="string">"POST"</span>)) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                validate(<span class="keyword">new</span> ServletWebRequest((request)));</span><br><span class="line">            &#125; <span class="keyword">catch</span> (ValidateCodeException e) &#123;</span><br><span class="line">                authenticationFailureHandler.onAuthenticationFailure(request, response, e);</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        filterChain.doFilter(request, response);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">validate</span><span class="params">(ServletWebRequest request)</span> <span class="keyword">throws</span> ServletRequestBindingException, ValidateCodeException </span>&#123;</span><br><span class="line">        <span class="comment">//从请求中取出之前存入session的验证码</span></span><br><span class="line">        ImageCode codeInSession = (ImageCode) sessionStrategy.getAttribute(request,</span><br><span class="line">                ValidateCodeController.SESSION_KEY);</span><br><span class="line">        <span class="comment">//获取form表单中用户输入的验证码</span></span><br><span class="line">        String codeInRequest = ServletRequestUtils.getStringParameter(request.getRequest(), <span class="string">"imageCode"</span>);  <span class="comment">//对应form表单中图片name</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (StringUtils.isBlank(codeInRequest)) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> ValidateCodeException(<span class="string">"验证码不能为空"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (codeInSession == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> ValidateCodeException(<span class="string">"验证码不存在"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (codeInSession.isExpired()) &#123;</span><br><span class="line">            sessionStrategy.removeAttribute(request, ValidateCodeController.SESSION_KEY);</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> ValidateCodeException(<span class="string">"验证码已过期"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (!StringUtils.equals(codeInSession.getCode(), codeInRequest)) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> ValidateCodeException(<span class="string">"验证码不匹配"</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        sessionStrategy.removeAttribute(request, ValidateCodeController.SESSION_KEY);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h2 id="在认证流程中加入图形验证码校验"><a href="#在认证流程中加入图形验证码校验" class="headerlink" title="在认证流程中加入图形验证码校验"></a>在认证流程中加入图形验证码校验</h2><p>在SecurityConfig类的configure(HttpSecurity http)方法中加入自定义过滤器链。<br><figure class="highlight java"><table><tr><td class="code"><pre><span class="line">ValidateCodeFilter validateCodeFilter = <span class="keyword">new</span> ValidateCodeFilter();</span><br><span class="line">validateCodeFilter.setAuthenticationFailureHandler(blogAuthenticationFailureHandler);</span><br><span class="line">http.addFilterBefore(validateCodeFilter,UsernamePasswordAuthenticationFilter<span class="class">.<span class="keyword">class</span>)</span></span><br></pre></td></tr></table></figure></p>
+<p>重构代码</p>
+]]></content>
+      <categories>
+        <category>Spring Security</category>
+      </categories>
+      <tags>
+        <tag>Spring Security</tag>
+        <tag>编程学习</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Spring Security系列七：认证流程源码级详解</title>
+    <url>/2020/03/02/Spring%20Security/%E8%AE%A4%E8%AF%81%E6%B5%81%E7%A8%8B%E6%BA%90%E7%A0%81%E7%BA%A7%E8%AF%A6%E8%A7%A3/</url>
+    <content><![CDATA[<h2 id="认证处理流程说明"><a href="#认证处理流程说明" class="headerlink" title="认证处理流程说明"></a>认证处理流程说明</h2><p>登录请求<br>SecurityCountexPersistenceFilter类<br>UsernamePasswordAuthenticationFilter<br>Authentication（未认证）<br>AuthenticationManager<br>AuthenticationProvider<br>UserDetailsService<br>UserDetails<br>Authentication（以认证）<br>SecurityContext<br>SecuContextHolder<br>SecuContextPersistenceFilter</p>
+<h2 id="认证结果如何在多个请求中共享"><a href="#认证结果如何在多个请求中共享" class="headerlink" title="认证结果如何在多个请求中共享"></a>认证结果如何在多个请求中共享</h2><p>SecurityCountexPersistenceFilter类<br>请求时检测session，若session中携带SecurityContext，将SecurityContext放到线程里；<br>响应时检查线程，若线程中有SecurityContext，则拿出来放到响应session中；<br>用户认证成功后，认证信息会放到程序的线程中，。<br>通过SecurityContextHolder.getContext().getAuthentication()可以在程序的任意位置获取到当前用户的认证信息。</p>
+<h2 id="获取认证用户信息"><a href="#获取认证用户信息" class="headerlink" title="获取认证用户信息"></a>获取认证用户信息</h2><p>方法一：SecurityContextHolder.getContext().getAuthentication();<br><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@GetMapping</span>(<span class="string">"/me"</span>)</span><br><span class="line"><span class="function"><span class="keyword">public</span> Object <span class="title">getCurrentUser</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> SecurityContextHolder.getContext().getAuthentication();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>方法二：通过Authentication authentication<br><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@GetMapping</span>(<span class="string">"/me"</span>)</span><br><span class="line"><span class="function"><span class="keyword">public</span> Object <span class="title">getCurrentUser</span><span class="params">(Authentication authentication)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> authentication;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>方法三：通过@AuthenticationPrincipal UserDetails user。这获取以上两种方法返回结果中的principal<br><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@GetMapping</span>(<span class="string">"/me"</span>)</span><br><span class="line"><span class="function"><span class="keyword">public</span> Object <span class="title">getCurrentUser</span><span class="params">(@AuthenticationPrincipal UserDetails user)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> user;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+]]></content>
+      <categories>
+        <category>Spring Security</category>
+      </categories>
+      <tags>
+        <tag>Spring Security</tag>
+        <tag>编程学习</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Spring Security系列四：自定义用户认证逻辑</title>
+    <url>/2020/03/02/Spring%20Security/%E8%87%AA%E5%AE%9A%E4%B9%89%E7%94%A8%E6%88%B7%E8%AE%A4%E8%AF%81/</url>
+    <content><![CDATA[<p>##　自定义用户认证逻辑</p>
+<p>一、处理用户信息获取逻辑（UserDetailsService接口中）<br>​    1. 新建MyUserDetailsService类，实现UserDetailsService接口<br>​    2. 使用@Component注解装饰MyUserDetailsService类<br>​    3. 实现loadUserByUsername(String username)方法<br>​    <figure class="highlight java"><table><tr><td class="code"><pre><span class="line">​	 <span class="meta">@Override</span></span><br><span class="line">​    <span class="function"><span class="keyword">public</span> UserDetails <span class="title">loadUserByUsername</span><span class="params">(String username)</span> <span class="keyword">throws</span> UsernameNotFoundException </span>&#123;</span><br><span class="line">​        logger.info(<span class="string">"用户名："</span> + username);</span><br><span class="line">​        <span class="keyword">return</span> <span class="keyword">new</span> User(username, <span class="string">"123456"</span>, AuthorityUtils.commaSeparatedStringToAuthorityList(<span class="string">"admin"</span>));</span><br><span class="line">​    &#125;</span><br><span class="line">​</span><br></pre></td></tr></table></figure></p>
+<p>​    &gt; User构造方法中：username和password用于认证，authorities用于授权</p>
+<p>二、处理用户校验逻辑(通过实现UserDetails接口自定义用户校验逻辑)<br>UserDetails接口解析<br>getAuthorities()；//获取认证<br>getUsername()；//获取用户名<br>getPassword()；//获取密码<br>isAccountNonExpired();//账号是否过期<br>isCredentialsNonExpired（）；//密码是否过期<br>isAccoutNonLocked();//账号是否被冻结<br>isEnabled;//用户是否可用，是否被删除</p>
+<p>三、处理密码加密解码（通过实现PasswordEncoder接口自定义加密解密）</p>
+<ol>
+<li>在SecurityConfig类中加入<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="function"><span class="keyword">public</span>  PasswordEncoder <span class="title">passwordEncoder</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> BCryptPasswordEncoder();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<blockquote>
+<p>注册时使用passwordEncoder.encode()方法对密码进行加密。</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>Spring Security</category>
+      </categories>
+      <tags>
+        <tag>Spring Security</tag>
+        <tag>编程学习</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Spring Security系列一：项目搭建</title>
+    <url>/2020/03/02/Spring%20Security/%E9%A1%B9%E7%9B%AE%E6%90%AD%E5%BB%BA/</url>
+    <content><![CDATA[<h2 id="代码结构"><a href="#代码结构" class="headerlink" title="代码结构"></a>代码结构</h2><p>moluo-security：主模块<br>moluo-security-core：核心业务逻辑<br>moluo-security-browser：浏览器安全特定代码<br>moluo-security-app：app相关特定代码<br>moluo-security-demo：样例程序</p>
+<h2 id="搭建项目"><a href="#搭建项目" class="headerlink" title="搭建项目"></a>搭建项目</h2><ol>
+<li>创建一个空的项目。项目名security</li>
+<li><p>添加以下模块Modules：使用maven构建<br> 格式：<br> GroupId：域名反写+项目名<br> ArtifactId：模块module名<br> Version：项目版本号</p>
+<p> 示例：moluo-security主模块，其他模块需要改变<code>ArtifactId</code><br> GroupId：com.moluo.security<br> ArtifactId：moluo-security<br> Version：1.0.0-SHAPSHOT</p>
+</li>
+<li><p>配置pom</p>
+</li>
+</ol>
+<ul>
+<li>moluo-security主模块pom配置<ul>
+<li>使用spring io 作为依赖管理。spring io 将自动为你管理你所使用的依赖版本号</li>
+<li>使用spring cloud 作为依赖管理。</li>
+<li>使用编译插件<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">build</span>&gt;</span></span><br><span class="line">       <span class="tag">&lt;<span class="name">plugins</span>&gt;</span></span><br><span class="line">           <span class="tag">&lt;<span class="name">plugin</span>&gt;</span></span><br><span class="line">               <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.maven.plugins<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">               <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>maven-compiler-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">               <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.7.0<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">               <span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">                   <span class="tag">&lt;<span class="name">source</span>&gt;</span>1.8<span class="tag">&lt;/<span class="name">source</span>&gt;</span></span><br><span class="line">                   <span class="tag">&lt;<span class="name">target</span>&gt;</span>1.8<span class="tag">&lt;/<span class="name">target</span>&gt;</span></span><br><span class="line">                   <span class="tag">&lt;<span class="name">encoding</span>&gt;</span>utf-8<span class="tag">&lt;/<span class="name">encoding</span>&gt;</span></span><br><span class="line">               <span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br><span class="line">           <span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></span><br><span class="line">       <span class="tag">&lt;/<span class="name">plugins</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;/<span class="name">build</span>&gt;</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>提示：<br>spring 官方文档地址：<a href="https://spring.io/docs/reference" target="_blank" rel="noopener">https://spring.io/docs/reference</a><br>配置信息路径：<a href="https://spring.io/docs/reference" target="_blank" rel="noopener">https://spring.io/docs/reference</a> → 搜索Spring IO Platform → reference（GA正式版）→ Using Spring IO Platform with Maven</p>
+</blockquote>
+<ul>
+<li><p>moluo-security-core模块pom配置</p>
+<ul>
+<li>依赖spring-cloud-starter-oauth2。包含spring security需要的大量jar包</li>
+<li>数据库存储相关依赖<br>​    - 依赖spring-boot-starter-data-redis。<br>​    - 依赖spring-boot-starter-jdbc。<br>​    - 依赖mysql-connector-java。</li>
+<li>实现第三方登录需要的依赖<br>​    - 依赖spring-social-config<br>​    - 依赖spring-social-core<br>​    - 依赖spring-social-security<br>​    - 依赖spring-social-web</li>
+<li>依赖commons-lang。包括字符串操作工具包</li>
+<li>依赖commons-collections。包括集合操作工具包</li>
+<li>依赖commons-beanutils。包括反射操作工具包</li>
+</ul>
+</li>
+<li><p>moluo-security-browser模块pom配置</p>
+<ul>
+<li>依赖moluo-security-core。继承moluo-security-core的所有依赖</li>
+<li>依赖spring-session。帮助我们做集群环境下的session管理</li>
+</ul>
+</li>
+<li><p>moluo-security-app模块pom配置</p>
+<ul>
+<li>依赖moluo-security-core。继承moluo-security-core的所有依赖</li>
+</ul>
+</li>
+<li><p>moluo-security-demo模块的pom配置</p>
+<ul>
+<li>依赖moluo-security-browser。</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>由于moluo-security-core的版本号被其他多个模块使用。在moluo-security主模块的pom中声明moluo.security.version变量存储其版本号，在其他模块中使用该变量<br>声明变量： </p>
+<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line">&gt;<span class="tag">&lt;<span class="name">properties</span>&gt;</span></span><br><span class="line">&gt;<span class="tag">&lt;<span class="name">moluo.security.version</span>&gt;</span>1.0.0-SNAPSHOT<span class="tag">&lt;/<span class="name">moluo.security.version</span>&gt;</span></span><br><span class="line">&gt;<span class="tag">&lt;/<span class="name">properties</span>&gt;</span></span><br><span class="line">&gt;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<blockquote>
+<p>使用变量：<br><figure class="highlight xml"><table><tr><td class="code"><pre><span class="line">&gt;<span class="tag">&lt;<span class="name">version</span>&gt;</span>$&#123;moluo.security.version&#125;<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">&gt;</span><br></pre></td></tr></table></figure></p>
+</blockquote>
+<ol start="4">
+<li><p>在moluo-security-demo中编写hello world<br> 1.新建com.moluo包<br> 2.在com.moluo包下新建DemoApplication.java文件，代码如下</p>
+  <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> org.springframework.boot.SpringApplication;</span><br><span class="line"><span class="keyword">import</span> org.springframework.boot.autoconfigure.SpringBootApplication;</span><br><span class="line"><span class="keyword">import</span> org.springframework.web.bind.annotation.GetMapping;</span><br><span class="line"><span class="keyword">import</span> org.springframework.web.bind.annotation.RestController;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> zzh</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@date</span> 2018/10/31</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="meta">@SpringBootApplication</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DemoApplication</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        SpringApplication.run(DemoApplication<span class="class">.<span class="keyword">class</span>,<span class="title">args</span>)</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@GetMapping</span>(<span class="string">"/hello"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">hello</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"hello world"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 3.运行项目，解决报错</p>
+<ul>
+<li><p>Failed to configure a DataSource: ‘url’ attribute is not specified and no embedded datasource could be configured.<br>错误原因：虽然引用了jdbc，到没有配置数据库链接<br>解决方法：在模块的resources目录下新建application.properties文件，内容如下：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">spring.datasource.driver-class-name=com.mysql.jdbc.Driver</span><br><span class="line">spring.datasource.url=jdbc:mysql://localhost:3306/moluo-demo?useUnicode=true&amp;characterEncoding=utf8</span><br><span class="line">spring.datasource.username=root</span><br><span class="line">spring.datasource.password=123456aB</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>session<br>错误原因：依赖了spring-session，暂时先关闭<br>解决方法：在application.properties文件中配置spring.session.store-type=none</p>
+</li>
+</ul>
+</li>
+<li><p>打包部署</p>
+<ul>
+<li>运行moluo-security模块的maven。先clean再package</li>
+<li><p>moluo-security-demo需要发布运行，需要包含第三方的jar包。需要配置pom.xml，实现如下：</p>
+<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">build</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">plugins</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">plugin</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-maven-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">executions</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">execution</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">goals</span>&gt;</span></span><br><span class="line">                        <span class="tag">&lt;<span class="name">goal</span>&gt;</span>repackage<span class="tag">&lt;/<span class="name">goal</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;/<span class="name">goals</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;/<span class="name">execution</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;/<span class="name">executions</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">plugins</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">finalName</span>&gt;</span>demo<span class="tag">&lt;/<span class="name">finalName</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">build</span>&gt;</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>切换到生成jar包的目录，运行 java -jar jar包名称.jar<br>示例：java -jar demo.jar</p>
+</li>
+<li>浏览器中访问<a href="http://localhost:8080/hello" target="_blank" rel="noopener">http://localhost:8080/hello</a> 将进入登录界面。<br>   user为：user，password可以在日志的Using generated security password字段中找到。如 Using generated security password: 11cc2e66-3951-4e07-8355-1e14e382b71d</li>
+</ul>
+</li>
+</ol>
+]]></content>
+      <categories>
+        <category>Spring Security</category>
+      </categories>
+      <tags>
+        <tag>Spring Security</tag>
+        <tag>编程学习</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Spring Security系列二：Spring Security 基本原理</title>
+    <url>/2020/03/02/Spring%20Security/Spring%20Security%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86/</url>
+    <content><![CDATA[<h2 id="Spring-Security-基本原理"><a href="#Spring-Security-基本原理" class="headerlink" title="Spring Security 基本原理"></a>Spring Security 基本原理</h2><ol>
+<li>新建SecurityConfig类继承自WebSecurityConfigurerAdapter</li>
+<li>使用@Configuration注解装饰SecurityConfig类</li>
+<li>重写configure(HttpSecurity http)方法<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">configure</span><span class="params">(HttpSecurity http)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    http.formLogin()</span><br><span class="line">            .and()</span><br><span class="line">            .authorizeRequests()</span><br><span class="line">            .anyRequest()</span><br><span class="line">            .authenticated();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<blockquote>
+<p>http.httpBasic()使用弹框验证</p>
+</blockquote>
+<h2 id="Spring-Security-过滤器链"><a href="#Spring-Security-过滤器链" class="headerlink" title="Spring Security 过滤器链"></a>Spring Security 过滤器链</h2><p>SecurityCountextPersistenceFilter</p>
+<ol>
+<li>username Password Authentication Filter（Form表单验证）</li>
+<li>Basic Authentication Filter（Http basic 验证）</li>
+<li>……</li>
+<li>Exception Translation Filter（第5步，认证不通过，捕获原因并引导用户重新认证）</li>
+<li>FilterSecurity Interceptor（通过认证，核对权限）</li>
+<li>REST API<blockquote>
+<p>第1、2、3步允许开发者定义，第4、5步为spring security 内部指定。</p>
+</blockquote>
+</li>
+</ol>
+]]></content>
+      <categories>
+        <category>Spring Security</category>
+      </categories>
+      <tags>
+        <tag>Spring Security</tag>
+        <tag>编程学习</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Spring Security系列三：个性化用户认证流程</title>
+    <url>/2020/03/02/Spring%20Security/%E4%B8%AA%E6%80%A7%E5%8C%96%E7%94%A8%E6%88%B7%E8%AE%A4%E8%AF%81%E6%B5%81%E7%A8%8B/</url>
+    <content><![CDATA[<h2 id="个性化用户认证流程"><a href="#个性化用户认证流程" class="headerlink" title="个性化用户认证流程"></a>个性化用户认证流程</h2><h2 id="自定义登录页面"><a href="#自定义登录页面" class="headerlink" title="自定义登录页面"></a>自定义登录页面</h2><ol>
+<li>新建resources/resources/SignIn.html</li>
+<li>在SecurityConfig类中，配置SignIn.html为登录页面并为其授权</li>
+<li>在SecurityConfig类中，配置登录表单提交url</li>
+<li>关闭跨站请求伪造<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">configure</span><span class="params">(HttpSecurity http)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    http.formLogin()</span><br><span class="line">            .loginPage(<span class="string">"/SignIn.html"</span>)</span><br><span class="line">            .loginProcessingUrl(<span class="string">"/authentication/form"</span>)</span><br><span class="line">            .and()</span><br><span class="line">            .authorizeRequests()</span><br><span class="line">            .antMatchers(<span class="string">"/SignIn.html"</span>).permitAll()</span><br><span class="line">            .anyRequest()</span><br><span class="line">            .authenticated()</span><br><span class="line">            .and()</span><br><span class="line">            .csrf().disable();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h2 id="自定义登录成功处理"><a href="#自定义登录成功处理" class="headerlink" title="自定义登录成功处理"></a>自定义登录成功处理</h2><ol>
+<li>新建BlogAuthenticationSuccessHandler类，实现AuthenticationSuccessHandler接口</li>
+<li>使用@Component(“blogAuthenticationSuccessHandler”)注解装饰BlogAuthenticationSuccessHandler类</li>
+<li><p>重写onAuthenticationSuccess()方法并编写登录成功后处理逻辑</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line">   <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onAuthenticationSuccess</span><span class="params">(HttpServletRequest request, HttpServletResponse response,</span></span></span><br><span class="line"><span class="function"><span class="params">                                       Authentication authentication)</span> <span class="keyword">throws</span> IOException, ServletException </span>&#123;</span><br><span class="line">       logger.info(<span class="string">"登录成功"</span>);</span><br><span class="line">       response.setContentType(<span class="string">"application/json;charset=utf-8"</span>);</span><br><span class="line">       response.getWriter().write(objectMapper.writeValueAsString(authentication));</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>在SecurityConfig中，配置自定义登录成功处理器</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">configure</span><span class="params">(HttpSecurity http)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">      http.formLogin()</span><br><span class="line">              .loginPage(<span class="string">"/authentication/request"</span>)</span><br><span class="line">              .loginProcessingUrl(<span class="string">"/authentication/form"</span>)</span><br><span class="line">              .successHandler(blogAuthenticationSuccessHandler)</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<p>Authentication信息解析<br>authenticated：是否经过认证<br>authority：角色<br>credentials：密码<br>remoteAddress：请求端地址<br>sessionId：<br>principal：UserDetails中的信息</p>
+<h2 id="自定义登录失败处理"><a href="#自定义登录失败处理" class="headerlink" title="自定义登录失败处理"></a>自定义登录失败处理</h2><ol>
+<li>新建BlogAuthenticationFailureHandler类，实现AuthenticationFailureHandler接口。</li>
+<li>使用@Component(“blogAuthenticationFailureHandler”)注解装饰BlogAuthenticationFailureHandler类。</li>
+<li><p>重写onAuthenticationFailure()方法并编写登录失败处理逻辑。</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onAuthenticationFailure</span><span class="params">(HttpServletRequest request, HttpServletResponse response,</span></span></span><br><span class="line"><span class="function"><span class="params">                                    AuthenticationException exception)</span> <span class="keyword">throws</span> IOException, ServletException </span>&#123;</span><br><span class="line">    logger.info(<span class="string">"登录失败"</span>);</span><br><span class="line">    response.setContentType(<span class="string">"application/json;charset=utf-8"</span>);</span><br><span class="line">    response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());</span><br><span class="line">    response.getWriter().write(objectMapper.writeValueAsString(exception));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>在SecurityConfig中，配置自定义登录失败处理器</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">configure</span><span class="params">(HttpSecurity http)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">      http.formLogin()</span><br><span class="line">              .loginPage(<span class="string">"/authentication/request"</span>)</span><br><span class="line">              .loginProcessingUrl(<span class="string">"/authentication/form"</span>)</span><br><span class="line">              .successHandler(blogAuthenticationSuccessHandler)</span><br><span class="line">              .failureHandler(blogAuthenticationFailureHandler)</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+]]></content>
+      <categories>
+        <category>Spring Security</category>
+      </categories>
+      <tags>
+        <tag>Spring Security</tag>
+        <tag>编程学习</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Spring Security系列六：使用Spring Social开发第三方登录</title>
+    <url>/2020/03/02/Spring%20Security/%E4%BD%BF%E7%94%A8Spring%20Social%E5%BC%80%E5%8F%91%E7%AC%AC%E4%B8%89%E6%96%B9%E7%99%BB%E5%BD%95/</url>
+    <content><![CDATA[<h1 id="OAuth协议"><a href="#OAuth协议" class="headerlink" title="OAuth协议"></a>OAuth协议</h1><p>通过token访问数据</p>
+<h2 id="OAuth角色及职责"><a href="#OAuth角色及职责" class="headerlink" title="OAuth角色及职责"></a>OAuth角色及职责</h2><p>provider：服务提供商<br>​    Authorization Server认证服务器<br>​    Resource Server 资源服务器<br>resource owner：资源所有者<br>client：第三方应用</p>
+<h2 id="OAuth协议流程"><a href="#OAuth协议流程" class="headerlink" title="OAuth协议流程"></a>OAuth协议流程</h2><h2 id="四种授权模式"><a href="#四种授权模式" class="headerlink" title="四种授权模式"></a>四种授权模式</h2><p>授权码模式（authorization code）<br>密码模式（resource owner password）<br>客户端模式<br>简化模式</p>
+<h1 id="Spring-Social开发第三方登录"><a href="#Spring-Social开发第三方登录" class="headerlink" title="Spring Social开发第三方登录"></a>Spring Social开发第三方登录</h1><p>Spring Social封装了social Authentication filter过滤器</p>
+<p>ServiceProvider(AbstracOAuth2ServiceProvider)<br>​    OAuth2Operations（OAuth2Template）<br>​    Api（AbstractOAuth2ApiBing）</p>
+<p>获取用户信息<br>Connection（OAuth2Connection）<br>ConnectionFactory（OAuth2ConnectionFactiry）<br>​    ServiceProvider<br>​    ApiAdapter<br>UserConnectionRepository（JdvcUsersConnectionRepository）<br>DB UserConnection</p>
+<p>新建类继承AbstractOAuth2ApiBing<br>accessToken访问的令牌<br>restTemplate发信息<br><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String URL_GET_OPENID=<span class="string">"https://https://graph.qq.com/oauth2.0/me?access_token=%s"</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String URL_GET_USERINFO=<span class="string">"https://graph.qq.com/user/get_user_info?access_token=%s&amp;oauth_consumer_key=%s&amp;openid=%s"</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> String appId</span><br><span class="line"><span class="keyword">private</span> String openId</span><br><span class="line"><span class="keyword">private</span> ObjectMapper objectMapper=<span class="keyword">new</span> ObjectMapper():</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">QQImpl</span><span class="params">(String accessToken,String appId)</span></span>&#123;</span><br><span class="line">    <span class="keyword">super</span>(accessToken,TokenStrategy.ACCESS_TOKEN_PARAMETER);</span><br><span class="line">    <span class="keyword">this</span>.appId=appId;</span><br><span class="line">    String url=String.format(URL_GET_OPENID,accessToken)</span><br><span class="line">    String result=getRestTemplate().getForObject(url,responseType);</span><br><span class="line">    <span class="keyword">this</span>.openId=StringUtils.SubstringBetween(result,<span class="string">"\"openid\":"</span>,<span class="string">"&#125;"</span>)；</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">getUerInfo()&#123;</span><br><span class="line">    String url=String.format(URL_GET_USERINFO,appId,openId);</span><br><span class="line">    String result=getRestTemplate().getForObject(url,String<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">    <span class="keyword">return</span> objectMapper.readValue(result,QQMessage<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class">    </span></span><br><span class="line"><span class="class">&#125;</span></span><br></pre></td></tr></table></figure></p>
+<p>新建QQServiceProvider 继承AbstracOAuth2ServiceProvider<qq><br><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">private</span> String appId；</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> Static <span class="keyword">final</span> String URL_AUTHORIZE=<span class="string">""</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String UTL_ACCESS_TOKEN=<span class="string">""</span></span><br><span class="line"></span><br><span class="line">publice(String appId，String appSecret)&#123;</span><br><span class="line">    <span class="keyword">super</span>(<span class="keyword">new</span> OAuth2Template(clientId,clientSecret,authorizeUrl,accessTokenUrl))</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> QQ <span class="title">getApi</span><span class="params">(String accessToken)</span></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> QQImpl(accessToken,appId);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></qq></p>
+]]></content>
+      <categories>
+        <category>Spring Security</category>
+      </categories>
+      <tags>
+        <tag>Spring Security</tag>
+        <tag>编程学习</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>云原生技术</title>
+    <url>/2020/03/02/Kubernetes/%E4%BA%91%E5%8E%9F%E7%94%9F%E6%8A%80%E6%9C%AF/</url>
+    <content><![CDATA[<h2 id="云原生技术"><a href="#云原生技术" class="headerlink" title="云原生技术"></a>云原生技术</h2><h2 id="云计算的发展历程"><a href="#云计算的发展历程" class="headerlink" title="云计算的发展历程"></a>云计算的发展历程</h2><p>“云”中的资源在使用者看来是可以无限扩展的，并且可以<strong>随时获取</strong>，<strong>按需使用</strong>，<strong>随时扩展</strong>，按使用付费。这种特性经常被称为像水电一样使用的IT基础设施。</p>
+<table>
+<thead>
+<tr>
+<th>时间</th>
+<th>事件</th>
+<th>分析</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2000</td>
+<td>Sum：非虚拟化硬件</td>
+<td>传统云计算Iaas</td>
+</tr>
+<tr>
+<td>2001</td>
+<td>VMware：虚拟化技术</td>
+<td></td>
+</tr>
+<tr>
+<td>2006</td>
+<td>Amazon：AWS推出EC2服务</td>
+<td></td>
+</tr>
+<tr>
+<td>2010</td>
+<td>openstack：OpenStack社区成立</td>
+<td></td>
+</tr>
+<tr>
+<td>2011</td>
+<td>CLOUDFOUNDRY：第一个开源PaaS平台CloudFoundry发布</td>
+<td></td>
+</tr>
+<tr>
+<td>2013</td>
+<td>docker：开源Docker发布</td>
+<td>新兴云计算Paas/Caas</td>
+</tr>
+<tr>
+<td>2014</td>
+<td>Google：发布Kubernetes开源项目</td>
+<td></td>
+</tr>
+<tr>
+<td>2015</td>
+<td>Google：宣布成立CNCF基金会</td>
+</tr>
+</tbody>
+</table>
+<h2 id="容器是云原生技术的第一波浪潮"><a href="#容器是云原生技术的第一波浪潮" class="headerlink" title="容器是云原生技术的第一波浪潮"></a>容器是云原生技术的第一波浪潮</h2><table>
+<thead>
+<tr>
+<th>kubernetes</th>
+<th>Istio</th>
+<th>Serverless服务</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>kubernetes成为容器编排的事实标准</td>
+<td>Service Mesh成为微服务新热点</td>
+<td>Serverless在公有云应用渐宽</td>
+</tr>
+</tbody>
+</table>
+<h2 id="CNCF当前项目介绍"><a href="#CNCF当前项目介绍" class="headerlink" title="CNCF当前项目介绍"></a>CNCF当前项目介绍</h2><table>
+<thead>
+<tr>
+<th>类别</th>
+<th>项目一</th>
+<th>项目二</th>
+<th>项目三</th>
+<th>项目四</th>
+<th>项目五</th>
+<th>…</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>容器编排</td>
+<td>Kubernetes</td>
+<td>Helm</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>容器引擎</td>
+<td>Containerd</td>
+<td>Rocket</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>容器镜像仓库</td>
+<td>Notary</td>
+<td>TUF</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>容器网络</td>
+<td>CNI</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>服务网格&amp;服务发现</td>
+<td>CoreDNS</td>
+<td>Linkerd</td>
+<td>Envoy</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>容器监控运维</td>
+<td>Prometheus</td>
+<td>Fluentd</td>
+<td>Jeager</td>
+<td>OpenTracing</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>消息通信</td>
+<td>GRPC</td>
+<td>NATS</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>数据库</td>
+<td>Vitness</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Sandbox项目</td>
+<td>Rook</td>
+<td>SPIFFE</td>
+<td>SPIRE</td>
+<td>Open Policy Agent</td>
+<td>CloudEvents</td>
+<td>Telepresence</td>
+</tr>
+</tbody>
+</table>
+]]></content>
+      <categories>
+        <category>kubernetes</category>
+      </categories>
+      <tags>
+        <tag>编程学习</tag>
+        <tag>Kubernetes</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>kubernetes集群搭建-kubeadm</title>
+    <url>/2020/03/02/Kubernetes/2.1Kubernetes%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA-kubeadm/</url>
+    <content><![CDATA[<h2 id="kubernetes集群搭建-kubeadm"><a href="#kubernetes集群搭建-kubeadm" class="headerlink" title="kubernetes集群搭建-kubeadm"></a>kubernetes集群搭建-kubeadm</h2><p>kubeadm是Kubernetes官方提供的用于快速安装Kubernetes集群的工具，伴随Kubernetes每个版本的发布都会同步更新，kubeadm会对集群配置方面的一些实践做调整，通过实验kubeadm可以学习到Kubernetes官方在集群配置上一些新的最佳实践。</p>
+<p>最近发布的<a href="https://www.kubernetes.org.cn/tags/kubernetes1-13" target="_blank" rel="noopener">Kubernetes 1.13</a>中，kubeadm的主要特性已经GA了，但还不包含高可用，不过说明<a href="https://www.kubernetes.org.cn/tags/kubeadm" target="_blank" rel="noopener">kubeadm</a>可在生产环境中使用的距离越来越近了。</p>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Maturity Level</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Command line UX</td>
+<td>GA</td>
+</tr>
+<tr>
+<td>Implementation</td>
+<td>GA</td>
+</tr>
+<tr>
+<td>Config file API</td>
+<td>beta</td>
+</tr>
+<tr>
+<td>CoreDNS</td>
+<td>GA</td>
+</tr>
+<tr>
+<td>kubeadm alpha subcommands</td>
+<td>alpha</td>
+</tr>
+<tr>
+<td>High availability</td>
+<td>alpha</td>
+</tr>
+<tr>
+<td>DynamicKubeletConfig</td>
+<td>alpha</td>
+</tr>
+<tr>
+<td>Self-hosting</td>
+<td>alpha</td>
+</tr>
+</tbody>
+</table>
+<p>当然我们线上稳定运行的Kubernetes集群是使用ansible以二进制形式的部署的高可用集群，这里体验Kubernetes 1.13中的kubeadm是为了跟随官方对集群初始化和配置方面的最佳实践，进一步完善我们的ansible部署脚本。</p>
+<h2 id="1-准备"><a href="#1-准备" class="headerlink" title="1.准备"></a>1.准备</h2><h3 id="1-1系统配置"><a href="#1-1系统配置" class="headerlink" title="1.1系统配置"></a>1.1系统配置</h3><p>在安装之前，需要先做如下准备。两台CentOS 7.4主机如下：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">cat /etc/hosts</span><br><span class="line">192.168.61.11 node1</span><br><span class="line">192.168.61.12 node2</span><br></pre></td></tr></table></figure>
+<p>如果各个主机启用了防火墙，需要开放Kubernetes各个组件所需要的端口，可以查看<a href="https://kubernetes.io/docs/setup/independent/install-kubeadm/" target="_blank" rel="noopener">Installing kubeadm</a>中的”Check required ports”一节。 这里简单起见在各节点禁用防火墙：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">systemctl stop firewalld</span><br><span class="line">systemctl <span class="built_in">disable</span> firewalld</span><br></pre></td></tr></table></figure>
+<p>禁用SELINUX：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">setenforce 0</span><br><span class="line">vi /etc/selinux/config</span><br><span class="line">SELINUX=disabled</span><br></pre></td></tr></table></figure>
+<p>创建/etc/sysctl.d/k8s.conf文件，添加如下内容：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">net.bridge.bridge-nf-call-ip6tables = 1</span><br><span class="line">net.bridge.bridge-nf-call-iptables = 1</span><br><span class="line">net.ipv4.ip_forward = 1</span><br></pre></td></tr></table></figure>
+<p>执行命令使修改生效。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">modprobe br_netfilter</span><br><span class="line">sysctl -p /etc/sysctl.d/k8s.conf</span><br></pre></td></tr></table></figure>
+<h3 id="1-2kube-proxy开启ipvs的前置条件"><a href="#1-2kube-proxy开启ipvs的前置条件" class="headerlink" title="1.2kube-proxy开启ipvs的前置条件"></a>1.2kube-proxy开启ipvs的前置条件</h3><p>由于ipvs已经加入到了内核的主干，所以为kube-proxy开启ipvs的前提需要加载以下的内核模块：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">ip_vs</span><br><span class="line">ip_vs_rr</span><br><span class="line">ip_vs_wrr</span><br><span class="line">ip_vs_sh</span><br><span class="line">nf_conntrack_ipv4</span><br></pre></td></tr></table></figure>
+<p>在所有的Kubernetes节点node1和node2上执行以下脚本:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">cat &gt; /etc/sysconfig/modules/ipvs.modules &lt;&lt;EOF</span><br><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line">modprobe -- ip_vs</span><br><span class="line">modprobe -- ip_vs_rr</span><br><span class="line">modprobe -- ip_vs_wrr</span><br><span class="line">modprobe -- ip_vs_sh</span><br><span class="line">modprobe -- nf_conntrack_ipv4</span><br><span class="line">EOF</span><br><span class="line">chmod 755 /etc/sysconfig/modules/ipvs.modules &amp;&amp; bash /etc/sysconfig/modules/ipvs.modules &amp;&amp; lsmod | grep -e ip_vs -e nf_conntrack_ipv4</span><br></pre></td></tr></table></figure>
+<p>上面脚本创建了的/etc/sysconfig/modules/ipvs.modules文件，保证在节点重启后能自动加载所需模块。  使用lsmod | grep -e ip_vs -e nf_conntrack_ipv4命令查看是否已经正确加载所需的内核模块。</p>
+<p>接下来还需要确保各个节点上已经安装了ipset软件包yum install ipset。 为了便于查看ipvs的代理规则，最好安装一下管理工具ipvsadm yum install ipvsadm。</p>
+<p>如果以上前提条件如果不满足，则即使kube-proxy的配置开启了ipvs模式，也会退回到iptables模式。</p>
+<h3 id="1-3安装Docker"><a href="#1-3安装Docker" class="headerlink" title="1.3安装Docker"></a>1.3安装Docker</h3><p>Kubernetes从1.6开始使用CRI(Container Runtime Interface)容器运行时接口。默认的容器运行时仍然是<a href="https://www.kubernetes.org.cn/tags/docker" target="_blank" rel="noopener">Docker</a>，使用的是kubelet中内置dockershim CRI实现。</p>
+<p>安装docker的yum源:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">yum install -y yum-utils device-mapper-persistent-data lvm2</span><br><span class="line">yum-config-manager \</span><br><span class="line">    --add-repo \</span><br><span class="line">    https://download.docker.com/linux/centos/docker-ce.repo</span><br></pre></td></tr></table></figure>
+<p>查看最新的Docker版本：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">yum list docker-ce.x86_64  --showduplicates |sort -r</span><br><span class="line">docker-ce.x86_64            3:18.09.0-3.el7                     docker-ce-stable</span><br><span class="line">docker-ce.x86_64            18.06.1.ce-3.el7                    docker-ce-stable</span><br><span class="line">docker-ce.x86_64            18.06.0.ce-3.el7                    docker-ce-stable</span><br><span class="line">docker-ce.x86_64            18.03.1.ce-1.el7.centos             docker-ce-stable</span><br><span class="line">docker-ce.x86_64            18.03.0.ce-1.el7.centos             docker-ce-stable</span><br><span class="line">docker-ce.x86_64            17.12.1.ce-1.el7.centos             docker-ce-stable</span><br><span class="line">docker-ce.x86_64            17.12.0.ce-1.el7.centos             docker-ce-stable</span><br><span class="line">docker-ce.x86_64            17.09.1.ce-1.el7.centos             docker-ce-stable</span><br><span class="line">docker-ce.x86_64            17.09.0.ce-1.el7.centos             docker-ce-stable</span><br><span class="line">docker-ce.x86_64            17.06.2.ce-1.el7.centos             docker-ce-stable</span><br><span class="line">docker-ce.x86_64            17.06.1.ce-1.el7.centos             docker-ce-stable</span><br><span class="line">docker-ce.x86_64            17.06.0.ce-1.el7.centos             docker-ce-stable</span><br><span class="line">docker-ce.x86_64            17.03.3.ce-1.el7                    docker-ce-stable</span><br><span class="line">docker-ce.x86_64            17.03.2.ce-1.el7.centos             docker-ce-stable</span><br><span class="line">docker-ce.x86_64            17.03.1.ce-1.el7.centos             docker-ce-stable</span><br><span class="line">docker-ce.x86_64            17.03.0.ce-1.el7.centos             docker-ce-stable</span><br></pre></td></tr></table></figure>
+<p>Kubernetes 1.12已经针对Docker的1.11.1, 1.12.1, 1.13.1, 17.03, 17.06,  17.09, 18.06等版本做了验证，需要注意Kubernetes 1.12最低支持的Docker版本是1.11.1。Kubernetes  1.13对Docker的版本依赖方面没有变化。 我们这里在各节点安装docker的18.06.1版本。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">yum makecache fast</span><br><span class="line"></span><br><span class="line">yum install -y --<span class="built_in">setopt</span>=obsoletes=0 \</span><br><span class="line">  docker-ce-18.06.1.ce-3.el7</span><br><span class="line"></span><br><span class="line">systemctl start docker</span><br><span class="line">systemctl <span class="built_in">enable</span> docker</span><br></pre></td></tr></table></figure>
+<p>确认一下iptables filter表中FOWARD链的默认策略(pllicy)为ACCEPT。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">iptables -nvL</span><br><span class="line">Chain INPUT (policy ACCEPT 263 packets, 19209 bytes)</span><br><span class="line"> pkts bytes target     prot opt <span class="keyword">in</span>     out     <span class="built_in">source</span>               destination</span><br><span class="line"></span><br><span class="line">Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)</span><br><span class="line"> pkts bytes target     prot opt <span class="keyword">in</span>     out     <span class="built_in">source</span>               destination</span><br><span class="line">    0     0 DOCKER-USER  all  --  *      *       0.0.0.0/0            0.0.0.0/0</span><br><span class="line">    0     0 DOCKER-ISOLATION-STAGE-1  all  --  *      *       0.0.0.0/0            0.0.0.0/0</span><br><span class="line">    0     0 ACCEPT     all  --  *      docker0  0.0.0.0/0            0.0.0.0/0            ctstate RELATED,ESTABLISHED</span><br><span class="line">    0     0 DOCKER     all  --  *      docker0  0.0.0.0/0            0.0.0.0/0</span><br><span class="line">    0     0 ACCEPT     all  --  docker0 !docker0  0.0.0.0/0            0.0.0.0/0</span><br><span class="line">    0     0 ACCEPT     all  --  docker0 docker0  0.0.0.0/0            0.0.0.0/0</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>Docker从1.13版本开始调整了默认的防火墙规则，禁用了iptables  filter表中FOWARD链，这样会引起Kubernetes集群中跨Node的Pod无法通信。但这里通过安装docker  1806，发现默认策略又改回了ACCEPT，这个不知道是从哪个版本改回的，因为我们线上版本使用的1706还是需要手动调整这个策略的。</p>
+</blockquote>
+<h2 id="2-使用kubeadm部署Kubernetes"><a href="#2-使用kubeadm部署Kubernetes" class="headerlink" title="2.使用kubeadm部署Kubernetes"></a>2.使用kubeadm部署Kubernetes</h2><h3 id="2-1-安装kubeadm和kubelet"><a href="#2-1-安装kubeadm和kubelet" class="headerlink" title="2.1 安装kubeadm和kubelet"></a>2.1 安装kubeadm和kubelet</h3><p>下面在各节点安装kubeadm和kubelet：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">cat &lt;&lt;EOF &gt; /etc/yum.repos.d/kubernetes.repo</span><br><span class="line">[kubernetes]</span><br><span class="line">name=Kubernetes</span><br><span class="line">baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64</span><br><span class="line">enabled=1</span><br><span class="line">gpgcheck=1</span><br><span class="line">repo_gpgcheck=1</span><br><span class="line">gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg</span><br><span class="line">        https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg</span><br><span class="line">EOF</span><br></pre></td></tr></table></figure>
+<p>测试地址<a href="https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64是否可用，如果不可用需要科学上网。" target="_blank" rel="noopener">https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64是否可用，如果不可用需要科学上网。</a></p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">curl https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64</span><br><span class="line">yum makecache fast</span><br><span class="line">yum install -y kubelet kubeadm kubectl</span><br><span class="line"></span><br><span class="line">... </span><br><span class="line">Installed:</span><br><span class="line">  kubeadm.x86_64 0:1.13.0-0                                    kubectl.x86_64 0:1.13.0-0                                                           kubelet.x86_64 0:1.13.0-0</span><br><span class="line"></span><br><span class="line">Dependency Installed:</span><br><span class="line">  cri-tools.x86_64 0:1.12.0-0                                  kubernetes-cni.x86_64 0:0.6.0-0                                                       socat.x86_64 0:1.7.3.2-2.el7</span><br></pre></td></tr></table></figure>
+<p>不会科学上网可使用阿里镜像安装</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 配置源</span></span><br><span class="line">cat &lt;&lt;EOF &gt; /etc/yum.repos.d/kubernetes.repo</span><br><span class="line">[kubernetes]</span><br><span class="line">name=Kubernetes</span><br><span class="line">baseurl=https://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64</span><br><span class="line">enabled=1</span><br><span class="line">gpgcheck=1</span><br><span class="line">repo_gpgcheck=1</span><br><span class="line">gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg https://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg</span><br><span class="line">EOF</span><br></pre></td></tr></table></figure>
+<blockquote>
+<ul>
+<li>从安装结果可以看出还安装了cri-tools, kubernetes-cni, socat三个依赖： <ul>
+<li>官方从Kubernetes 1.9开始就将cni依赖升级到了0.6.0版本，在当前1.12中仍然是这个版本</li>
+<li>socat是kubelet的依赖</li>
+<li>cri-tools是CRI(Container Runtime Interface)容器运行时接口的命令行工具</li>
+</ul>
+</li>
+</ul>
+</blockquote>
+<p>运行kubelet –help可以看到原来kubelet的绝大多数命令行flag参数都被DEPRECATED了，如：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">......</span><br><span class="line">--address 0.0.0.0   The IP address <span class="keyword">for</span> the Kubelet to serve on (<span class="built_in">set</span> to 0.0.0.0 <span class="keyword">for</span> all IPv4 interfaces and `::` <span class="keyword">for</span> all IPv6 interfaces) (default 0.0.0.0) (DEPRECATED: This parameter should be <span class="built_in">set</span> via the config file specified by the Kubelet<span class="string">'s --config flag. See https://kubernetes.io/docs/tasks/administer-cluster/kubelet-config-file/ for more information.)</span></span><br><span class="line"><span class="string">......</span></span><br></pre></td></tr></table></figure>
+<p>而官方推荐我们使用–config指定配置文件，并在配置文件中指定原来这些flag所配置的内容。具体内容可以查看这里<a href="https://kubernetes.io/docs/tasks/administer-cluster/kubelet-config-file/" target="_blank" rel="noopener">Set Kubelet parameters via a config file</a>。这也是Kubernetes为了支持动态Kubelet配置（Dynamic Kubelet Configuration）才这么做的，参考<a href="https://kubernetes.io/docs/tasks/administer-cluster/reconfigure-kubelet/" target="_blank" rel="noopener">Reconfigure a Node’s Kubelet in a Live Cluster</a>。</p>
+<p>kubelet的配置文件必须是json或yaml格式，具体可查看<a href="https://github.com/kubernetes/kubernetes/blob/release-1.10/pkg/kubelet/apis/kubeletconfig/v1beta1/types.go" target="_blank" rel="noopener">这里</a>。</p>
+<p>Kubernetes 1.8开始要求关闭系统的Swap，如果不关闭，默认配置下kubelet将无法启动。</p>
+<blockquote>
+<p>关闭系统的Swap方法如下:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">&gt;   swapoff -a</span><br><span class="line">&gt;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<blockquote>
+<p>修改 /etc/fstab 文件，注释掉 SWAP 的自动挂载，使用free -m确认swap已经关闭。 swappiness参数调整，修改/etc/sysctl.d/k8s.conf添加下面一行：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">&gt;   vm.swappiness=0</span><br><span class="line">&gt;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<blockquote>
+<p>执行sysctl -p /etc/sysctl.d/k8s.conf使修改生效。</p>
+</blockquote>
+<p>因为这里本次用于测试两台主机上还运行其他服务，关闭swap可能会对其他服务产生影响，所以这里修改kubelet的配置去掉这个限制。  之前的Kubernetes版本我们都是通过kubelet的启动参数–fail-swap-on=false去掉这个限制的。前面已经分析了Kubernetes不再推荐使用启动参数，而推荐使用配置文件。  所以这里我们改成配置文件配置的形式。</p>
+<p>查看/etc/systemd/system/kubelet.service.d/10-kubeadm.conf，看到了下面的内容：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># Note: This dropin only works with kubeadm and kubelet v1.11+</span></span><br><span class="line">[Service]</span><br><span class="line">Environment=<span class="string">"KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf"</span></span><br><span class="line">Environment=<span class="string">"KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml"</span></span><br><span class="line"><span class="comment"># This is a file that "kubeadm init" and "kubeadm join" generates at runtime, populating the KUBELET_KUBEADM_ARGS variable dynamically</span></span><br><span class="line">EnvironmentFile=-/var/lib/kubelet/kubeadm-flags.env</span><br><span class="line"><span class="comment"># This is a file that the user can use for overrides of the kubelet args as a last resort. Preferably, the user should use</span></span><br><span class="line"><span class="comment"># the .NodeRegistration.KubeletExtraArgs object in the configuration files instead. KUBELET_EXTRA_ARGS should be sourced from this file.</span></span><br><span class="line">EnvironmentFile=-/etc/sysconfig/kubelet</span><br><span class="line">ExecStart=</span><br><span class="line">ExecStart=/usr/bin/kubelet <span class="variable">$KUBELET_KUBECONFIG_ARGS</span> <span class="variable">$KUBELET_CONFIG_ARGS</span> <span class="variable">$KUBELET_KUBEADM_ARGS</span> <span class="variable">$KUBELET_EXTRA_ARGS</span></span><br></pre></td></tr></table></figure>
+<p>上面显示kubeadm部署的kubelet的配置文件–config=/var/lib/kubelet/config.yaml，实际去查看/var/lib/kubelet和这个config.yaml的配置文件都没有被创建。  可以猜想肯定是运行kubeadm初始化集群时会自动生成这个配置文件，而如果我们不关闭Swap的话，第一次初始化集群肯定会失败的。</p>
+<p>所以还是老老实实的回到使用kubelet的启动参数–fail-swap-on=false去掉必须关闭Swap的限制。 修改/etc/sysconfig/kubelet，加入：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">KUBELET_EXTRA_ARGS=--fail-swap-on=<span class="literal">false</span></span><br></pre></td></tr></table></figure>
+<h3 id="2-2-使用kubeadm-init初始化集群"><a href="#2-2-使用kubeadm-init初始化集群" class="headerlink" title="2.2 使用kubeadm init初始化集群"></a>2.2 使用kubeadm init初始化集群</h3><p>在各节点开机启动kubelet服务：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">systemctl <span class="built_in">enable</span> kubelet.service</span><br></pre></td></tr></table></figure>
+<p>接下来使用kubeadm初始化集群，选择node1作为Master Node，在node1上执行下面的命令：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">kubeadm init \</span><br><span class="line">  --kubernetes-version=v1.13.0 \</span><br><span class="line">  --pod-network-cidr=10.244.0.0/16 \</span><br><span class="line">  --apiserver-advertise-address=192.168.61.11</span><br></pre></td></tr></table></figure>
+<p>因为我们选择flannel作为Pod网络插件，所以上面的命令指定–pod-network-cidr=10.244.0.0/16。</p>
+<p>执行时报了下面的错误：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">[init] using Kubernetes version: v1.13.0</span><br><span class="line">[preflight] running pre-flight checks</span><br><span class="line">[preflight] Some fatal errors occurred:</span><br><span class="line">        [ERROR Swap]: running with swap on is not supported. Please <span class="built_in">disable</span> swap</span><br><span class="line">[preflight] If you know what you are doing, you can make a check non-fatal with `--ignore-preflight-errors=...`</span><br></pre></td></tr></table></figure>
+<p>有一个错误信息是running with swap on is not supported. Please disable  swap。因为我们决定配置failSwapOn:  false，所以重新添加–ignore-preflight-errors=Swap参数忽略这个错误，重新运行。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">kubeadm init \</span><br><span class="line">   --kubernetes-version=v1.13.0 \</span><br><span class="line">   --pod-network-cidr=10.244.0.0/16 \</span><br><span class="line">   --apiserver-advertise-address=192.168.61.11 \</span><br><span class="line">   --ignore-preflight-errors=Swap</span><br><span class="line"></span><br><span class="line">[init] Using Kubernetes version: v1.13.0</span><br><span class="line">[preflight] Running pre-flight checks</span><br><span class="line">        [WARNING Swap]: running with swap on is not supported. Please <span class="built_in">disable</span> swap</span><br><span class="line">[preflight] Pulling images required <span class="keyword">for</span> setting up a Kubernetes cluster</span><br><span class="line">[preflight] This might take a minute or two, depending on the speed of your internet connection</span><br><span class="line">[preflight] You can also perform this action <span class="keyword">in</span> beforehand using <span class="string">'kubeadm config images pull'</span></span><br><span class="line">[kubelet-start] Writing kubelet environment file with flags to file <span class="string">"/var/lib/kubelet/kubeadm-flags.env"</span></span><br><span class="line">[kubelet-start] Writing kubelet configuration to file <span class="string">"/var/lib/kubelet/config.yaml"</span></span><br><span class="line">[kubelet-start] Activating the kubelet service</span><br><span class="line">[certs] Using certificateDir folder <span class="string">"/etc/kubernetes/pki"</span></span><br><span class="line">[certs] Generating <span class="string">"ca"</span> certificate and key</span><br><span class="line">[certs] Generating <span class="string">"apiserver-kubelet-client"</span> certificate and key</span><br><span class="line">[certs] Generating <span class="string">"apiserver"</span> certificate and key</span><br><span class="line">[certs] apiserver serving cert is signed <span class="keyword">for</span> DNS names [node1 kubernetes kubernetes.default kubernetes.default.svc kubernetes.default.svc.cluster.local] and IPs [10.96.0.1 192.168.61.11]</span><br><span class="line">[certs] Generating <span class="string">"front-proxy-ca"</span> certificate and key</span><br><span class="line">[certs] Generating <span class="string">"front-proxy-client"</span> certificate and key</span><br><span class="line">[certs] Generating <span class="string">"etcd/ca"</span> certificate and key</span><br><span class="line">[certs] Generating <span class="string">"etcd/healthcheck-client"</span> certificate and key</span><br><span class="line">[certs] Generating <span class="string">"etcd/server"</span> certificate and key</span><br><span class="line">[certs] etcd/server serving cert is signed <span class="keyword">for</span> DNS names [node1 localhost] and IPs [192.168.61.11 127.0.0.1 ::1]</span><br><span class="line">[certs] Generating <span class="string">"etcd/peer"</span> certificate and key</span><br><span class="line">[certs] etcd/peer serving cert is signed <span class="keyword">for</span> DNS names [node1 localhost] and IPs [192.168.61.11 127.0.0.1 ::1]</span><br><span class="line">[certs] Generating <span class="string">"apiserver-etcd-client"</span> certificate and key</span><br><span class="line">[certs] Generating <span class="string">"sa"</span> key and public key</span><br><span class="line">[kubeconfig] Using kubeconfig folder <span class="string">"/etc/kubernetes"</span></span><br><span class="line">[kubeconfig] Writing <span class="string">"admin.conf"</span> kubeconfig file</span><br><span class="line">[kubeconfig] Writing <span class="string">"kubelet.conf"</span> kubeconfig file</span><br><span class="line">[kubeconfig] Writing <span class="string">"controller-manager.conf"</span> kubeconfig file</span><br><span class="line">[kubeconfig] Writing <span class="string">"scheduler.conf"</span> kubeconfig file</span><br><span class="line">[control-plane] Using manifest folder <span class="string">"/etc/kubernetes/manifests"</span></span><br><span class="line">[control-plane] Creating static Pod manifest <span class="keyword">for</span> <span class="string">"kube-apiserver"</span></span><br><span class="line">[control-plane] Creating static Pod manifest <span class="keyword">for</span> <span class="string">"kube-controller-manager"</span></span><br><span class="line">[control-plane] Creating static Pod manifest <span class="keyword">for</span> <span class="string">"kube-scheduler"</span></span><br><span class="line">[etcd] Creating static Pod manifest <span class="keyword">for</span> <span class="built_in">local</span> etcd <span class="keyword">in</span> <span class="string">"/etc/kubernetes/manifests"</span></span><br><span class="line">[<span class="built_in">wait</span>-control-plane] Waiting <span class="keyword">for</span> the kubelet to boot up the control plane as static Pods from directory <span class="string">"/etc/kubernetes/manifests"</span>. This can take up to 4m0s</span><br><span class="line">[apiclient] All control plane components are healthy after 19.506551 seconds</span><br><span class="line">[uploadconfig] storing the configuration used <span class="keyword">in</span> ConfigMap <span class="string">"kubeadm-config"</span> <span class="keyword">in</span> the <span class="string">"kube-system"</span> Namespace</span><br><span class="line">[kubelet] Creating a ConfigMap <span class="string">"kubelet-config-1.13"</span> <span class="keyword">in</span> namespace kube-system with the configuration <span class="keyword">for</span> the kubelets <span class="keyword">in</span> the cluster</span><br><span class="line">[patchnode] Uploading the CRI Socket information <span class="string">"/var/run/dockershim.sock"</span> to the Node API object <span class="string">"node1"</span> as an annotation</span><br><span class="line">[mark-control-plane] Marking the node node1 as control-plane by adding the label <span class="string">"node-role.kubernetes.io/master=''"</span></span><br><span class="line">[mark-control-plane] Marking the node node1 as control-plane by adding the taints [node-role.kubernetes.io/master:NoSchedule]</span><br><span class="line">[bootstrap-token] Using token: 702gz5.49zhotgsiyqimwqw</span><br><span class="line">[bootstrap-token] Configuring bootstrap tokens, cluster-info ConfigMap, RBAC Roles</span><br><span class="line">[bootstraptoken] configured RBAC rules to allow Node Bootstrap tokens to post CSRs <span class="keyword">in</span> order <span class="keyword">for</span> nodes to get long term certificate credentials</span><br><span class="line">[bootstraptoken] configured RBAC rules to allow the csrapprover controller automatically approve CSRs from a Node Bootstrap Token</span><br><span class="line">[bootstraptoken] configured RBAC rules to allow certificate rotation <span class="keyword">for</span> all node client certificates <span class="keyword">in</span> the cluster</span><br><span class="line">[bootstraptoken] creating the <span class="string">"cluster-info"</span> ConfigMap <span class="keyword">in</span> the <span class="string">"kube-public"</span> namespace</span><br><span class="line">[addons] Applied essential addon: CoreDNS</span><br><span class="line">[addons] Applied essential addon: kube-proxy</span><br><span class="line"></span><br><span class="line">Your Kubernetes master has initialized successfully!</span><br><span class="line"></span><br><span class="line">To start using your cluster, you need to run the following as a regular user:</span><br><span class="line"></span><br><span class="line">  mkdir -p <span class="variable">$HOME</span>/.kube</span><br><span class="line">  sudo cp -i /etc/kubernetes/admin.conf <span class="variable">$HOME</span>/.kube/config</span><br><span class="line">  sudo chown $(id -u):$(id -g) <span class="variable">$HOME</span>/.kube/config</span><br><span class="line"></span><br><span class="line">You should now deploy a pod network to the cluster.</span><br><span class="line">Run <span class="string">"kubectl apply -f [podnetwork].yaml"</span> with one of the options listed at:</span><br><span class="line">  https://kubernetes.io/docs/concepts/cluster-administration/addons/</span><br><span class="line"></span><br><span class="line">You can now join any number of machines by running the following on each node</span><br><span class="line">as root:</span><br><span class="line"></span><br><span class="line">  kubeadm join 192.168.61.11:6443 --token 702gz5.49zhotgsiyqimwqw --discovery-token-ca-cert-hash sha256:2bc50229343849e8021d2aa19d9d314539b40ec7a311b5bb6ca1d3cd10957c2f</span><br></pre></td></tr></table></figure>
+<p>上面记录了完成的初始化输出的内容，根据输出的内容基本上可以看出手动初始化安装一个Kubernetes集群所需要的关键步骤。</p>
+<blockquote>
+<p>其中有以下关键内容：</p>
+<ul>
+<li><p>[kubelet-start] 生成kubelet的配置文件”/var/lib/kubelet/config.yaml”</p>
+</li>
+<li><p>[certificates]生成相关的各种证书</p>
+</li>
+<li><p>[kubeconfig]生成相关的kubeconfig文件</p>
+</li>
+<li><p>[bootstraptoken]生成token记录下来，后边使用kubeadm join往集群中添加节点时会用到</p>
+</li>
+<li><p>下面的命令是配置常规用户如何使用kubectl访问集群： </p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">&gt;     mkdir -p <span class="variable">$HOME</span>/.kube</span><br><span class="line">&gt;     sudo cp -i /etc/kubernetes/admin.conf <span class="variable">$HOME</span>/.kube/config</span><br><span class="line">&gt;     sudo chown $(id -u):$(id -g) <span class="variable">$HOME</span>/.kube/config</span><br><span class="line">&gt;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</blockquote>
+<blockquote>
+<ul>
+<li>最后给出了将节点加入集群的命令kubeadm join 192.168.61.11:6443 –token  702gz5.49zhotgsiyqimwqw –discovery-token-ca-cert-hash  sha256:2bc50229343849e8021d2aa19d9d314539b40ec7a311b5bb6ca1d3cd10957c2f</li>
+</ul>
+</blockquote>
+<p>若从k8s.gcr.io拉取镜像失败，请科学上网或采用docker.io仓库拉取相关镜像</p>
+<p>docker.io仓库对google的容器做了镜像，可以通过下列命令下拉取相关镜像：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">docker pull mirrorgooglecontainers/kube-apiserver-amd64:v1.11.3</span><br><span class="line">docker pull mirrorgooglecontainers/kube-controller-manager-amd64:v1.11.3</span><br><span class="line">docker pull mirrorgooglecontainers/kube-scheduler-amd64:v1.11.3</span><br><span class="line">docker pull mirrorgooglecontainers/kube-proxy-amd64:v1.11.3</span><br><span class="line">docker pull mirrorgooglecontainers/pause:3.1</span><br><span class="line">docker pull mirrorgooglecontainers/etcd-amd64:3.2.18</span><br><span class="line">docker pull coredns/coredns:1.1.3</span><br></pre></td></tr></table></figure>
+<p>版本信息需要根据实际情况进行相应的修改。通过docker tag命令来修改镜像的标签：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">docker tag docker.io/mirrorgooglecontainers/kube-proxy-amd64:v1.11.3 k8s.gcr.io/kube-proxy-amd64:v1.11.3</span><br><span class="line">docker tag docker.io/mirrorgooglecontainers/kube-scheduler-amd64:v1.11.3 k8s.gcr.io/kube-scheduler-amd64:v1.11.3</span><br><span class="line">docker tag docker.io/mirrorgooglecontainers/kube-apiserver-amd64:v1.11.3 k8s.gcr.io/kube-apiserver-amd64:v1.11.3</span><br><span class="line">docker tag docker.io/mirrorgooglecontainers/kube-controller-manager-amd64:v1.11.3 k8s.gcr.io/kube-controller-manager-amd64:v1.11.3</span><br><span class="line">docker tag docker.io/mirrorgooglecontainers/etcd-amd64:3.2.18  k8s.gcr.io/etcd-amd64:3.2.18</span><br><span class="line">docker tag docker.io/mirrorgooglecontainers/pause:3.1  k8s.gcr.io/pause:3.1</span><br><span class="line">docker tag docker.io/coredns/coredns:1.1.3  k8s.gcr.io/coredns:1.1.3</span><br></pre></td></tr></table></figure>
+<p>使用docker rmi删除不用镜像，通过docker images命令显示，已经有我们需要的镜像文件，可以继续部署工作了。</p>
+<p>查看一下集群状态：（若查看不到，请使用su命令切换到root用户查看）</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">kubectl get cs</span><br><span class="line">NAME                 STATUS    MESSAGE              ERROR</span><br><span class="line">controller-manager   Healthy   ok</span><br><span class="line">scheduler            Healthy   ok</span><br><span class="line">etcd-0               Healthy   &#123;<span class="string">"health"</span>: <span class="string">"true"</span>&#125;</span><br></pre></td></tr></table></figure>
+<p>确认个组件都处于healthy状态。</p>
+<p>集群初始化如果遇到问题，可以使用下面的命令进行清理：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">kubeadm reset</span><br><span class="line">ifconfig cni0 down</span><br><span class="line">ip link delete cni0</span><br><span class="line">ifconfig flannel.1 down</span><br><span class="line">ip link delete flannel.1</span><br><span class="line">rm -rf /var/lib/cni/</span><br></pre></td></tr></table></figure>
+<h3 id="2-3-安装Pod-Network"><a href="#2-3-安装Pod-Network" class="headerlink" title="2.3 安装Pod Network"></a>2.3 安装Pod Network</h3><p>接下来安装flannel network add-on：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">mkdir -p ~/k8s/</span><br><span class="line"><span class="built_in">cd</span> ~/k8s</span><br><span class="line">wget https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml</span><br><span class="line">kubectl apply -f  kube-flannel.yml</span><br><span class="line"></span><br><span class="line">clusterrole.rbac.authorization.k8s.io/flannel created</span><br><span class="line">clusterrolebinding.rbac.authorization.k8s.io/flannel created</span><br><span class="line">serviceaccount/flannel created</span><br><span class="line">configmap/kube-flannel-cfg created</span><br><span class="line">daemonset.extensions/kube-flannel-ds-amd64 created</span><br><span class="line">daemonset.extensions/kube-flannel-ds-arm64 created</span><br><span class="line">daemonset.extensions/kube-flannel-ds-arm created</span><br><span class="line">daemonset.extensions/kube-flannel-ds-ppc64le created</span><br><span class="line">daemonset.extensions/kube-flannel-ds-s390x created</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>这里注意kube-flannel.yml这个文件里的flannel的镜像是0.10.0，quay.io/coreos/flannel:v0.10.0-amd64</p>
+</blockquote>
+<p>如果Node有多个网卡的话，参考<a href="https://github.com/kubernetes/kubernetes/issues/39701" target="_blank" rel="noopener">flannel issues 39701</a>，目前需要在kube-flannel.yml中使用–iface参数指定集群主机内网网卡的名称，否则可能会出现dns无法解析。需要将kube-flannel.yml下载到本地，flanneld启动参数加上–iface=<iface-name></iface-name></p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">......</span><br><span class="line">containers:</span><br><span class="line">      - name: kube-flannel</span><br><span class="line">        image: quay.io/coreos/flannel:v0.10.0-amd64</span><br><span class="line">        <span class="built_in">command</span>:</span><br><span class="line">        - /opt/bin/flanneld</span><br><span class="line">        args:</span><br><span class="line">        - --ip-masq</span><br><span class="line">        - --kube-subnet-mgr</span><br><span class="line">        - --iface=eth1</span><br><span class="line">......</span><br></pre></td></tr></table></figure>
+<p>使用kubectl get pod –all-namespaces -o wide确保所有的Pod都处于Running状态。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">kubectl get pod --all-namespaces -o wide</span><br><span class="line">NAMESPACE     NAME                            READY   STATUS    RESTARTS   AGE     IP              NODE    NOMINATED NODE</span><br><span class="line">kube-system   coredns-576cbf47c7-njt7l        1/1     Running   0          12m    10.244.0.3      node1   &lt;none&gt;</span><br><span class="line">kube-system   coredns-576cbf47c7-vg2gd        1/1     Running   0          12m    10.244.0.2      node1   &lt;none&gt;</span><br><span class="line">kube-system   etcd-node1                      1/1     Running   0          12m    192.168.61.11   node1   &lt;none&gt;</span><br><span class="line">kube-system   kube-apiserver-node1            1/1     Running   0          12m    192.168.61.11   node1   &lt;none&gt;</span><br><span class="line">kube-system   kube-controller-manager-node1   1/1     Running   0          12m    192.168.61.11   node1   &lt;none&gt;</span><br><span class="line">kube-system   kube-flannel-ds-amd64-bxtqh     1/1     Running   0          2m     192.168.61.11   node1   &lt;none&gt;</span><br><span class="line">kube-system   kube-proxy-fb542                1/1     Running   0          12m    192.168.61.11   node1   &lt;none&gt;</span><br><span class="line">kube-system   kube-scheduler-node1            1/1     Running   0          12m    192.168.61.11   node1   &lt;none&gt;</span><br></pre></td></tr></table></figure>
+<h3 id="2-4-master-node参与工作负载"><a href="#2-4-master-node参与工作负载" class="headerlink" title="2.4 master node参与工作负载"></a>2.4 master node参与工作负载</h3><p>使用kubeadm初始化的集群，出于安全考虑Pod不会被调度到Master Node上，也就是说Master  Node不参与工作负载。这是因为当前的master节点node1被打上了node-role.kubernetes.io/master:NoSchedule的污点：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">kubectl describe node node1 | grep Taint</span><br><span class="line">Taints:             node-role.kubernetes.io/master:NoSchedule</span><br></pre></td></tr></table></figure>
+<p>因为这里搭建的是测试环境，去掉这个污点使node1参与工作负载：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">kubectl taint nodes node1 node-role.kubernetes.io/master-</span><br><span class="line">node <span class="string">"node1"</span> untainted</span><br></pre></td></tr></table></figure>
+<h3 id="2-5-测试DNS"><a href="#2-5-测试DNS" class="headerlink" title="2.5 测试DNS"></a>2.5 测试DNS</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">kubectl run curl --image=radial/busyboxplus:curl -it</span><br><span class="line">kubectl run --generator=deployment/apps.v1beta1 is DEPRECATED and will be removed <span class="keyword">in</span> a future version. Use kubectl create instead.</span><br><span class="line">If you don<span class="string">'t see a command prompt, try pressing enter.</span></span><br><span class="line"><span class="string">[ root@curl-5cc7b478b6-r997p:/ ]$</span></span><br></pre></td></tr></table></figure>
+<p>进入后执行nslookup kubernetes.default确认解析正常:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">nslookup kubernetes.default</span><br><span class="line">Server:    10.96.0.10</span><br><span class="line">Address 1: 10.96.0.10 kube-dns.kube-system.svc.cluster.local</span><br><span class="line"></span><br><span class="line">Name:      kubernetes.default</span><br><span class="line">Address 1: 10.96.0.1 kubernetes.default.svc.cluster.local</span><br></pre></td></tr></table></figure>
+<h3 id="2-6-向Kubernetes集群中添加Node节点"><a href="#2-6-向Kubernetes集群中添加Node节点" class="headerlink" title="2.6 向Kubernetes集群中添加Node节点"></a>2.6 向Kubernetes集群中添加Node节点</h3><p>下面我们将node2这个主机添加到Kubernetes集群中，因为我们同样在node2上的kubelet的启动参数中去掉了必须关闭swap的限制，所以同样需要–ignore-preflight-errors=Swap这个参数。 在node2上执行:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">kubeadm join 192.168.61.11:6443 --token 702gz5.49zhotgsiyqimwqw --discovery-token-ca-cert-hash sha256:2bc50229343849e8021d2aa19d9d314539b40ec7a311b5bb6ca1d3cd10957c2f \</span><br><span class="line"> --ignore-preflight-errors=Swap</span><br><span class="line"></span><br><span class="line">[preflight] Running pre-flight checks</span><br><span class="line">        [WARNING Swap]: running with swap on is not supported. Please <span class="built_in">disable</span> swap</span><br><span class="line">[discovery] Trying to connect to API Server <span class="string">"192.168.61.11:6443"</span></span><br><span class="line">[discovery] Created cluster-info discovery client, requesting info from <span class="string">"https://192.168.61.11:6443"</span></span><br><span class="line">[discovery] Requesting info from <span class="string">"https://192.168.61.11:6443"</span> again to validate TLS against the pinned public key</span><br><span class="line">[discovery] Cluster info signature and contents are valid and TLS certificate validates against pinned roots, will use API Server <span class="string">"192.168.61.11:6443"</span></span><br><span class="line">[discovery] Successfully established connection with API Server <span class="string">"192.168.61.11:6443"</span></span><br><span class="line">[join] Reading configuration from the cluster...</span><br><span class="line">[join] FYI: You can look at this config file with <span class="string">'kubectl -n kube-system get cm kubeadm-config -oyaml'</span></span><br><span class="line">[kubelet] Downloading configuration <span class="keyword">for</span> the kubelet from the <span class="string">"kubelet-config-1.13"</span> ConfigMap <span class="keyword">in</span> the kube-system namespace</span><br><span class="line">[kubelet-start] Writing kubelet configuration to file <span class="string">"/var/lib/kubelet/config.yaml"</span></span><br><span class="line">[kubelet-start] Writing kubelet environment file with flags to file <span class="string">"/var/lib/kubelet/kubeadm-flags.env"</span></span><br><span class="line">[kubelet-start] Activating the kubelet service</span><br><span class="line">[tlsbootstrap] Waiting <span class="keyword">for</span> the kubelet to perform the TLS Bootstrap...</span><br><span class="line">[patchnode] Uploading the CRI Socket information <span class="string">"/var/run/dockershim.sock"</span> to the Node API object <span class="string">"node2"</span> as an annotation</span><br><span class="line"></span><br><span class="line">This node has joined the cluster:</span><br><span class="line">* Certificate signing request was sent to apiserver and a response was received.</span><br><span class="line">* The Kubelet was informed of the new secure connection details.</span><br><span class="line"></span><br><span class="line">Run <span class="string">'kubectl get nodes'</span> on the master to see this node join the cluster.</span><br></pre></td></tr></table></figure>
+<p>node2加入集群很是顺利，下面在master节点上执行命令查看集群中的节点：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">kubectl get nodes</span><br><span class="line">NAME    STATUS   ROLES    AGE    VERSION</span><br><span class="line">node1   Ready    master   16m    v1.13.0</span><br><span class="line">node2   Ready    &lt;none&gt;   4m5s   v1.13.0</span><br></pre></td></tr></table></figure>
+<h4 id="如何从集群中移除Node"><a href="#如何从集群中移除Node" class="headerlink" title="如何从集群中移除Node"></a>如何从集群中移除Node</h4><p>如果需要从集群中移除node2这个Node执行下面的命令：</p>
+<p>在master节点上执行：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">kubectl drain node2 --delete-local-data --force --ignore-daemonsets</span><br><span class="line">kubectl delete node node2</span><br></pre></td></tr></table></figure>
+<p>在node2上执行：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">kubeadm reset</span><br><span class="line">ifconfig cni0 down</span><br><span class="line">ip link delete cni0</span><br><span class="line">ifconfig flannel.1 down</span><br><span class="line">ip link delete flannel.1</span><br><span class="line">rm -rf /var/lib/cni/</span><br></pre></td></tr></table></figure>
+<p>在node1上执行：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">kubectl delete node node2</span><br></pre></td></tr></table></figure>
+<h3 id="2-7-kube-proxy开启ipvs"><a href="#2-7-kube-proxy开启ipvs" class="headerlink" title="2.7 kube-proxy开启ipvs"></a>2.7 kube-proxy开启ipvs</h3><p>修改ConfigMap的kube-system/kube-proxy中的config.conf，mode: “ipvs”：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">kubectl edit cm kube-proxy -n kube-system</span><br></pre></td></tr></table></figure>
+<p>之后重启各个节点上的kube-proxy pod：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">kubectl get pod -n kube-system | grep kube-proxy | awk <span class="string">'&#123;system("kubectl delete pod "$1" -n kube-system")&#125;'</span></span><br><span class="line">kubectl get pod -n kube-system | grep kube-proxy</span><br><span class="line">kube-proxy-pf55q                1/1     Running   0          9s</span><br><span class="line">kube-proxy-qjnnc                1/1     Running   0          14s</span><br><span class="line"></span><br><span class="line">kubectl logs kube-proxy-pf55q -n kube-system</span><br><span class="line">I1208 06:12:23.516444       1 server_others.go:189] Using ipvs Proxier.</span><br><span class="line">W1208 06:12:23.516738       1 proxier.go:365] IPVS scheduler not specified, use rr by default</span><br><span class="line">I1208 06:12:23.516840       1 server_others.go:216] Tearing down inactive rules.</span><br><span class="line">I1208 06:12:23.575222       1 server.go:464] Version: v1.13.0</span><br><span class="line">I1208 06:12:23.585142       1 conntrack.go:52] Setting nf_conntrack_max to 131072</span><br><span class="line">I1208 06:12:23.586203       1 config.go:202] Starting service config controller</span><br><span class="line">I1208 06:12:23.586243       1 controller_utils.go:1027] Waiting <span class="keyword">for</span> caches to sync <span class="keyword">for</span> service config controller</span><br><span class="line">I1208 06:12:23.586269       1 config.go:102] Starting endpoints config controller</span><br><span class="line">I1208 06:12:23.586275       1 controller_utils.go:1027] Waiting <span class="keyword">for</span> caches to sync <span class="keyword">for</span> endpoints config controller</span><br><span class="line">I1208 06:12:23.686959       1 controller_utils.go:1034] Caches are synced <span class="keyword">for</span> endpoints config controller</span><br><span class="line">I1208 06:12:23.687056       1 controller_utils.go:1034] Caches are synced <span class="keyword">for</span> service config controller</span><br></pre></td></tr></table></figure>
+<p>日志中打印出了Using ipvs Proxier，说明ipvs模式已经开启。</p>
+<h2 id="3-Kubernetes常用组件部署"><a href="#3-Kubernetes常用组件部署" class="headerlink" title="3.Kubernetes常用组件部署"></a>3.Kubernetes常用组件部署</h2><p>越来越多的公司和团队开始使用Helm这个Kubernetes的包管理器，我们也将使用Helm安装Kubernetes的常用组件。</p>
+<h3 id="3-1-Helm的安装"><a href="#3-1-Helm的安装" class="headerlink" title="3.1 Helm的安装"></a>3.1 Helm的安装</h3><p>Helm由客户端命helm令行工具和服务端tiller组成，Helm的安装十分简单。 下载helm命令行工具到master节点node1的/usr/local/bin下，这里下载的2.12.0版本：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">wget https://storage.googleapis.com/kubernetes-helm/helm-v2.12.0-linux-amd64.tar.gz</span><br><span class="line">tar -zxvf helm-v2.12.0-linux-amd64.tar.gz</span><br><span class="line"><span class="built_in">cd</span> linux-amd64/</span><br><span class="line">cp helm /usr/<span class="built_in">local</span>/bin/</span><br></pre></td></tr></table></figure>
+<p>为了安装服务端tiller，还需要在这台机器上配置好kubectl工具和kubeconfig文件，确保kubectl工具可以在这台机器上访问apiserver且正常使用。 这里的node1节点以及配置好了kubectl。</p>
+<p>因为Kubernetes APIServer开启了RBAC访问控制，所以需要创建tiller使用的service account: tiller并分配合适的角色给它。 详细内容可以查看helm文档中的<a href="https://docs.helm.sh/using_helm/#role-based-access-control" target="_blank" rel="noopener">Role-based Access Control</a>。 这里简单起见直接分配cluster-admin这个集群内置的ClusterRole给它。创建rbac-config.yaml文件：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: ServiceAccount</span><br><span class="line">metadata:</span><br><span class="line">  name: tiller</span><br><span class="line">  namespace: kube-system</span><br><span class="line">---</span><br><span class="line">apiVersion: rbac.authorization.k8s.io/v1beta1</span><br><span class="line">kind: ClusterRoleBinding</span><br><span class="line">metadata:</span><br><span class="line">  name: tiller</span><br><span class="line">roleRef:</span><br><span class="line">  apiGroup: rbac.authorization.k8s.io</span><br><span class="line">  kind: ClusterRole</span><br><span class="line">  name: cluster-admin</span><br><span class="line">subjects:</span><br><span class="line">  - kind: ServiceAccount</span><br><span class="line">    name: tiller</span><br><span class="line">    namespace: kube-system</span><br><span class="line">kubectl create -f rbac-config.yaml</span><br><span class="line">serviceaccount/tiller created</span><br><span class="line">clusterrolebinding.rbac.authorization.k8s.io/tiller created</span><br></pre></td></tr></table></figure>
+<p>接下来使用helm部署tiller:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">helm init --service-account tiller --skip-refresh</span><br><span class="line">Creating /root/.helm</span><br><span class="line">Creating /root/.helm/repository</span><br><span class="line">Creating /root/.helm/repository/cache</span><br><span class="line">Creating /root/.helm/repository/<span class="built_in">local</span></span><br><span class="line">Creating /root/.helm/plugins</span><br><span class="line">Creating /root/.helm/starters</span><br><span class="line">Creating /root/.helm/cache/archive</span><br><span class="line">Creating /root/.helm/repository/repositories.yaml</span><br><span class="line">Adding stable repo with URL: https://kubernetes-charts.storage.googleapis.com</span><br><span class="line">Adding <span class="built_in">local</span> repo with URL: http://127.0.0.1:8879/charts</span><br><span class="line"><span class="variable">$HELM_HOME</span> has been configured at /root/.helm.</span><br><span class="line"></span><br><span class="line">Tiller (the Helm server-side component) has been installed into your Kubernetes Cluster.</span><br><span class="line"></span><br><span class="line">Please note: by default, Tiller is deployed with an insecure <span class="string">'allow unauthenticated users'</span> policy.</span><br><span class="line">To prevent this, run `helm init` with the --tiller-tls-verify flag.</span><br><span class="line">For more information on securing your installation see: https://docs.helm.sh/using_helm/<span class="comment">#securing-your-helm-installation</span></span><br><span class="line">Happy Helming!</span><br></pre></td></tr></table></figure>
+<p>tiller默认被部署在k8s集群中的kube-system这个namespace下：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">kubectl get pod -n kube-system -l app=helm</span><br><span class="line">NAME                            READY   STATUS    RESTARTS   AGE</span><br><span class="line">tiller-deploy-c4fd4cd68-dwkhv   1/1     Running   0          83s</span><br><span class="line">helm version</span><br><span class="line">Client: &amp;version.Version&#123;SemVer:<span class="string">"v2.12.0"</span>, GitCommit:<span class="string">"d325d2a9c179b33af1a024cdb5a4472b6288016a"</span>, GitTreeState:<span class="string">"clean"</span>&#125;</span><br><span class="line">Server: &amp;version.Version&#123;SemVer:<span class="string">"v2.12.0"</span>, GitCommit:<span class="string">"d325d2a9c179b33af1a024cdb5a4472b6288016a"</span>, GitTreeState:<span class="string">"clean"</span>&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注意由于某些原因需要网络可以访问gcr.io和kubernetes-charts.storage.googleapis.com，如果无法访问可以通过helm  init –service-account tiller –tiller-image  <your-docker-registry>/tiller:v2.11.0  –skip-refresh使用私有镜像仓库中的tiller镜像</your-docker-registry></p>
+</blockquote>
+<h3 id="3-2-使用Helm部署Nginx-Ingress"><a href="#3-2-使用Helm部署Nginx-Ingress" class="headerlink" title="3.2 使用Helm部署Nginx Ingress"></a>3.2 使用Helm部署Nginx Ingress</h3><p>为了便于将集群中的服务暴露到集群外部，从集群外部访问，接下来使用Helm将Nginx Ingress部署到Kubernetes上。  Nginx Ingress  Controller被部署在Kubernetes的边缘节点上，关于Kubernetes边缘节点的高可用相关的内容可以查看我前面整理的<a href="https://blog.frognew.com/2018/10/ingress-edge-node-ha-in-bare-metal-k8s-with-ipvs.html" target="_blank" rel="noopener">Bare metal环境下Kubernetes Ingress边缘节点的高可用(基于IPVS)</a>。</p>
+<p>我们将node1(192.168.61.11)和node2(192.168.61.12)同时做为边缘节点，打上Label：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">kubectl label node node1 node-role.kubernetes.io/edge=</span><br><span class="line">node/node1 labeled</span><br><span class="line"></span><br><span class="line">kubectl label node node2 node-role.kubernetes.io/edge=</span><br><span class="line">node/node2 labeled</span><br><span class="line"></span><br><span class="line">kubectl get node</span><br><span class="line">NAME    STATUS   ROLES         AGE   VERSION</span><br><span class="line">node1   Ready    edge,master   24m   v1.13.0</span><br><span class="line">node2   Ready    edge          11m   v1.13.0</span><br></pre></td></tr></table></figure>
+<p>stable/nginx-ingress chart的值文件ingress-nginx.yaml：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">controller:</span><br><span class="line">  replicaCount: 2</span><br><span class="line">  service:</span><br><span class="line">    externalIPs:</span><br><span class="line">      - 192.168.61.10</span><br><span class="line">  nodeSelector:</span><br><span class="line">    node-role.kubernetes.io/edge: <span class="string">''</span></span><br><span class="line">  affinity:</span><br><span class="line">    podAntiAffinity:</span><br><span class="line">        requiredDuringSchedulingIgnoredDuringExecution:</span><br><span class="line">        - labelSelector:</span><br><span class="line">            matchExpressions:</span><br><span class="line">            - key: app </span><br><span class="line">              operator: In</span><br><span class="line">              values:</span><br><span class="line">              - nginx-ingress</span><br><span class="line">            - key: component</span><br><span class="line">              operator: In</span><br><span class="line">              values:</span><br><span class="line">              - controller</span><br><span class="line">          topologyKey: kubernetes.io/hostname</span><br><span class="line">  tolerations:</span><br><span class="line">      - key: node-role.kubernetes.io/master</span><br><span class="line">        operator: Exists</span><br><span class="line">        effect: NoSchedule</span><br><span class="line"></span><br><span class="line">defaultBackend:</span><br><span class="line">  nodeSelector:</span><br><span class="line">    node-role.kubernetes.io/edge: <span class="string">''</span></span><br><span class="line">  tolerations:</span><br><span class="line">      - key: node-role.kubernetes.io/master</span><br><span class="line">        operator: Exists</span><br><span class="line">        effect: NoSchedule</span><br></pre></td></tr></table></figure>
+<p>nginx ingress  controller的副本数replicaCount为2，将被调度到node1和node2这两个边缘节点上。externalIPs指定的192.168.61.10为VIP，将绑定到kube-proxy kube-ipvs0网卡上。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">helm repo update</span><br><span class="line"></span><br><span class="line">helm install stable/nginx-ingress \</span><br><span class="line">-n nginx-ingress \</span><br><span class="line">--namespace ingress-nginx  \</span><br><span class="line">-f ingress-nginx.yaml</span><br><span class="line">kubectl get pod -n ingress-nginx -o wide</span><br><span class="line">NAME                                             READY   STATUS    RESTARTS   AGE    IP           NODE    NOMINATED NODE   READINESS GATES</span><br><span class="line">nginx-ingress-controller-85f8597fc6-g2kcx        1/1     Running   0          5m2s   10.244.1.3   node2   &lt;none&gt;           &lt;none&gt;</span><br><span class="line">nginx-ingress-controller-85f8597fc6-g7pp5        1/1     Running   0          5m2s   10.244.0.5   node1   &lt;none&gt;           &lt;none&gt;</span><br><span class="line">nginx-ingress-default-backend-6dc6c46dcc-7plm8   1/1     Running   0          5m2s   10.244.1.4   node2   &lt;none&gt;           &lt;none&gt;</span><br></pre></td></tr></table></figure>
+<p>如果访问<a href="http://192.168.61.10返回default" target="_blank" rel="noopener">http://192.168.61.10返回default</a> backend，则部署完成。</p>
+<p>实际测试的结果是无法访问，于是怀疑kube-proxy出了问题，查看kube-proxy的日志，不停的刷下面的log：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">I1208 07:59:28.902970       1 graceful_termination.go:160] Trying to delete rs: 10.104.110.193:80/TCP/10.244.1.5:80</span><br><span class="line">I1208 07:59:28.903037       1 graceful_termination.go:170] Deleting rs: 10.104.110.193:80/TCP/10.244.1.5:80</span><br><span class="line">I1208 07:59:28.903072       1 graceful_termination.go:160] Trying to delete rs: 10.104.110.193:80/TCP/10.244.0.6:80</span><br><span class="line">I1208 07:59:28.903105       1 graceful_termination.go:170] Deleting rs: 10.104.110.193:80/TCP/10.244.0.6:80</span><br><span class="line">I1208 07:59:28.903713       1 graceful_termination.go:160] Trying to delete rs: 192.168.61.10:80/TCP/10.244.1.5:80</span><br><span class="line">I1208 07:59:28.903764       1 graceful_termination.go:170] Deleting rs: 192.168.61.10:80/TCP/10.244.1.5:80</span><br><span class="line">I1208 07:59:28.903798       1 graceful_termination.go:160] Trying to delete rs: 192.168.61.10:80/TCP/10.244.0.6:80</span><br><span class="line">I1208 07:59:28.903824       1 graceful_termination.go:170] Deleting rs: 192.168.61.10:80/TCP/10.244.0.6:80</span><br><span class="line">I1208 07:59:28.904654       1 graceful_termination.go:160] Trying to delete rs: 10.0.2.15:31698/TCP/10.244.0.6:80</span><br><span class="line">I1208 07:59:28.904837       1 graceful_termination.go:170] Deleting rs: 10.0.2.15:31698/TCP/10.244.0.6:80</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>在Kubernetes的Github上找到了这个ISSUE <a href="https://github.com/kubernetes/kubernetes/issues/71071" target="_blank" rel="noopener">https://github.com/kubernetes/kubernetes/issues/71071</a>，大致是最近更新的IPVS  proxier mode now support connection based graceful  termination.引入了bug，导致Kubernetes的1.11.5、1.12.1~1.12.3、1.13.0都有这个问题，即kube-proxy在ipvs模式下不可用。而官方称在1.11.5、1.12.3、1.13.0中修复了12月4日k8s的特权升级漏洞(CVE-2018-1002105)，如果针对这个漏洞做k8s升级的同学，需要小心，确认是否开启了ipvs，避免由升级引起k8s网络问题。由于我们线上的版本是1.11并且已经启用了ipvs，所以这里我们只能先把线上master  node升级到了1.11.5，而kube-proxy还在使用1.11.4的版本。</p>
+</blockquote>
+<p><a href="https://github.com/kubernetes/kubernetes/issues/71071" target="_blank" rel="noopener">https://github.com/kubernetes/kubernetes/issues/71071</a>中已经描述有相关PR解决这个问题，后续只能跟踪一下1.11.5、1.12.3、1.13.0之后的小版本了。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><p><a href="https://kubernetes.io/zh/docs/setup/independent/create-cluster-kubeadm/#tear-down" target="_blank" rel="noopener"> 使用 kubeadm 创建一个单主集群</a></p>
+</li>
+<li><p><a href="https://www.kubernetes.org.cn/4956.html" target="_blank" rel="noopener">使用kubeadm安装Kubernetes 1.13</a></p>
+</li>
+<li><p><a href="https://www.kubernetes.org.cn/4256.html" target="_blank" rel="noopener">centos7使用kubeadm安装kubernetes 1.11版本多主高可用</a></p>
+</li>
+<li><p><a href="https://www.jianshu.com/p/64ed63594485" target="_blank" rel="noopener">简单Kubernetes的Minikube安装</a></p>
+</li>
+<li><p><a href="https://blog.csdn.net/jinguangliu/article/details/82792617" target="_blank" rel="noopener">Kubernetes：如何解决从k8s.gcr.io拉取镜像失败问题</a></p>
+</li>
+<li><p><a href="https://www.jianshu.com/p/6fa06b9bbf6a" target="_blank" rel="noopener">从节点运行命令kubectl出错</a></p>
+</li>
+<li><p><a href="https://www.jianshu.com/p/d0cdbb49569b" target="_blank" rel="noopener">kunernets使用helm安装tiller踩坑</a></p>
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>kubernetes</category>
+      </categories>
+      <tags>
+        <tag>编程学习</tag>
+        <tag>Kubernetes</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Deployment</title>
+    <url>/2020/03/02/Kubernetes/5.Deployment/</url>
+    <content><![CDATA[<h2 id="Deployment"><a href="#Deployment" class="headerlink" title="Deployment"></a>Deployment</h2><p>Deployment 描述了一种希望pod（如pod数、pod镜像版本）的状态，Deployment将努力现实这种状态。</p>
+<h2 id="创建"><a href="#创建" class="headerlink" title="创建"></a>创建</h2><p>kubectl create -f {deployment yaml file}</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">apps/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">nginx-deployment</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">nginx</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">replicas:</span> <span class="number">3</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">matchLabels:</span></span><br><span class="line">      <span class="attr">app:</span> <span class="string">nginx</span></span><br><span class="line">  <span class="attr">template:</span></span><br><span class="line">    <span class="attr">metadata:</span></span><br><span class="line">      <span class="attr">labels:</span></span><br><span class="line">        <span class="attr">app:</span> <span class="string">nginx</span></span><br><span class="line">    <span class="attr">spec:</span></span><br><span class="line">      <span class="attr">containers:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nginx</span></span><br><span class="line">        <span class="attr">image:</span> <span class="string">nginx:1.12.2</span></span><br><span class="line">        <span class="attr">ports:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">containerPort:</span> <span class="number">80</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>deployment 会自动创建replicaset和pod。replicaset的名称为deployment名称+随机数，pods的名称为replicaset名称+随机数。<br>rs列表查看：kubectl get rs<br>pod列表查看：kubectl get pods</p>
+</blockquote>
+<p>查看deployment：kubectl get deplolyment</p>
+<p>查看deployment更多信息（selector，container）：kubectl get deployment -o wide</p>
+<p>升级pod image： kubectl set image deployment {deployment name} nginx=nginx：1.13</p>
+<p>查看deployment升级历史：kubectl rollout history deployment {deployment name}</p>
+<p>回滚deployment版本：kubectl undo deployment {deployment name}</p>
+<h2 id="暴露端口到节点上："><a href="#暴露端口到节点上：" class="headerlink" title="暴露端口到节点上："></a>暴露端口到节点上：</h2><p>1.查看节点ip：kubectl get nede -o wide，<br>2.暴露端口kubectl expode deployment {deployment name} –type=NodePort，<br>3.查看暴露端口的映射：kubectl get svc</p>
+<p>扩展:删除service: kubectl delete services {services name} </p>
+]]></content>
+      <categories>
+        <category>kubernetes</category>
+      </categories>
+      <tags>
+        <tag>编程学习</tag>
+        <tag>Kubernetes</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>pod介绍</title>
+    <url>/2020/03/02/Kubernetes/3.pod%E4%BB%8B%E7%BB%8D/</url>
+    <content><![CDATA[<h2 id="pod介绍"><a href="#pod介绍" class="headerlink" title="pod介绍"></a>pod介绍</h2><p>pod是k8s的最小调度单位，一个pod中可以包含一个或多个container，pod中的container共享同一个namespace，即不同的container可以通过localhost相互访问</p>
+<h2 id="创建pod"><a href="#创建pod" class="headerlink" title="创建pod"></a>创建pod</h2><p>kubectl create -f {pod yaml file}</p>
+<blockquote>
+<p>注意：一般不要采用该方法创建pod，建议选用Deployment、replicaset或replicationController</p>
+</blockquote>
+<p>pod_nginx.yml</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">nginx</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">nginx</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">containers:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nginx</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">nginx</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">containerPort:</span> <span class="number">80</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>yml文件解析</p>
+<ul>
+<li>kind：指定资源类型（pod）</li>
+<li>metadata：pod的metadata。如名字name，标签labels</li>
+<li>spec：pod中最关键的部分-容器（容器名字name、容器镜像image、容器暴露端口containerPort）</li>
+</ul>
+</blockquote>
+<p>查看集群健康：kubectl version</p>
+<h2 id="删除pod"><a href="#删除pod" class="headerlink" title="删除pod"></a>删除pod</h2><p>kubectl delete -f pod_nginx.yml</p>
+<h2 id="查看pod"><a href="#查看pod" class="headerlink" title="查看pod"></a>查看pod</h2><ul>
+<li><p>查看pod列表：kubectl get pods</p>
+</li>
+<li><p>显示pod的详细信息（比如容器在哪，容器ip等）：kubectl get pods -o wide</p>
+</li>
+<li>具体表述一个resource(名字，namespace，在哪个节点上，lable，IP地址，container  id，image ，port相关信息)：kebuctl  describe {resource type} {resource name}</li>
+</ul>
+<h2 id="进入pod中的容器"><a href="#进入pod中的容器" class="headerlink" title="进入pod中的容器"></a>进入pod中的容器</h2><ul>
+<li>方法一：minikube ssh进入节点，docker ps 查看container，通过dockers命令进入到容器中</li>
+<li>方法二：kubectl exec -it {pod name} sh 进入到pod中的容器中，当pod有多个容器时，通过加参数进入第二个容器的命令为kubectl exec -it {pod name} -c {container} sh</li>
+</ul>
+<h2 id="暴露pod服务"><a href="#暴露pod服务" class="headerlink" title="暴露pod服务"></a>暴露pod服务</h2><p>端口映射：kubectl port-forward {podname} {外部端口}：{内部端口}</p>
+]]></content>
+      <categories>
+        <category>kubernetes</category>
+      </categories>
+      <tags>
+        <tag>编程学习</tag>
+        <tag>Kubernetes</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Replicaset和ReplicationController</title>
+    <url>/2020/03/02/Kubernetes/4.Replicaset%E5%92%8CReplicationController/</url>
+    <content><![CDATA[<h2 id="pod的横向扩展"><a href="#pod的横向扩展" class="headerlink" title="pod的横向扩展"></a>pod的横向扩展</h2><p>kubectl create -f {rs yam fille | rc yam fille}</p>
+<p>rs_nginx.yml</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">apps/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">ReplicaSet</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">nginx</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">tier:</span> <span class="string">frontend</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">replicas:</span> <span class="number">3</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">matchLabels:</span></span><br><span class="line">      <span class="attr">tier:</span> <span class="string">frontend</span></span><br><span class="line">  <span class="attr">template:</span></span><br><span class="line">    <span class="attr">metadata:</span></span><br><span class="line">      <span class="attr">name:</span> <span class="string">nginx</span></span><br><span class="line">      <span class="attr">labels:</span></span><br><span class="line">        <span class="attr">tier:</span> <span class="string">frontend</span></span><br><span class="line">    <span class="attr">spec:</span></span><br><span class="line">      <span class="attr">containers:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nginx</span></span><br><span class="line">        <span class="attr">image:</span> <span class="string">nginx</span></span><br><span class="line">        <span class="attr">ports:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">containerPort:</span> <span class="number">80</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注意：新版本才支持Replicaset，相比ReplicationController，Replicaset支持new set-based selector</p>
+</blockquote>
+<p>查看Replicaset：kubectl get rs</p>
+<p>横向扩展pod数：kubectl scale rs {rs name} –replicas={pod 数}</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">ReplicationController</span> </span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">nginx</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">replicas:</span> <span class="number">3</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">nginx</span></span><br><span class="line">  <span class="attr">template:</span></span><br><span class="line">    <span class="attr">metadata:</span></span><br><span class="line">      <span class="attr">name:</span> <span class="string">nginx</span></span><br><span class="line">      <span class="attr">labels:</span></span><br><span class="line">        <span class="attr">app:</span> <span class="string">nginx</span></span><br><span class="line">    <span class="attr">spec:</span></span><br><span class="line">      <span class="attr">containers:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nginx</span></span><br><span class="line">        <span class="attr">image:</span> <span class="string">nginx</span></span><br><span class="line">        <span class="attr">ports:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">containerPort:</span> <span class="number">80</span></span><br></pre></td></tr></table></figure>
+<p>查看ReplicationController：kubectl get rc</p>
+<p>删除ReplicationController：kubectl delete -f {rc yaml file}</p>
+<p>横向扩展pod数：kubectl scale rc {rc name} –replicas={pod 数}</p>
+]]></content>
+      <categories>
+        <category>kubernetes</category>
+      </categories>
+      <tags>
+        <tag>编程学习</tag>
+        <tag>Kubernetes</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Kubernetes集群搭建</title>
+    <url>/2020/03/02/Kubernetes/2.Kubernetes%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/</url>
+    <content><![CDATA[<h2 id="Kubernetes集群搭建"><a href="#Kubernetes集群搭建" class="headerlink" title="Kubernetes集群搭建"></a>Kubernetes集群搭建</h2><p>kelsey Hightower：kubernetes首席布道师</p>
+<h2 id="Kubernetes集群搭建方式"><a href="#Kubernetes集群搭建方式" class="headerlink" title="Kubernetes集群搭建方式"></a>Kubernetes集群搭建方式</h2><ul>
+<li>minikube搭建单节点集群</li>
+<li>kubeadm搭建多节点集群</li>
+<li>kops 在cloud上搭建集群</li>
+<li>Tectonic搭建集群</li>
+<li>Play with kubernetes</li>
+</ul>
+<h2 id="minikube搭建单节点集群"><a href="#minikube搭建单节点集群" class="headerlink" title="minikube搭建单节点集群"></a>minikube搭建单节点集群</h2><p>1.安装kubectl<br>2.下载安装minikube<br>3.安装虚拟工具<br>4.minikube start（若已经在虚机中，可使用minikube start –vm-driver=none将集群安装在本机）</p>
+<p>扩展：<br>kubectl context：基本的配置信息（api地址、serve地址端口、认证信息）</p>
+<ul>
+<li>查看基本信息：kubectl config view</li>
+<li>查看context：kubectl get-context（通过不同的context可以进入不同的kubernetes集群）</li>
+<li>查看集群信息：kubectl cluster-info</li>
+<li>进入虚机minikube ssh</li>
+</ul>
+<h2 id="kubeadm搭建多节点集群"><a href="#kubeadm搭建多节点集群" class="headerlink" title="kubeadm搭建多节点集群"></a>kubeadm搭建多节点集群</h2><h2 id="kops-在cloud上搭建集群"><a href="#kops-在cloud上搭建集群" class="headerlink" title="kops 在cloud上搭建集群"></a>kops 在cloud上搭建集群</h2><h2 id="Tectonic搭建集群"><a href="#Tectonic搭建集群" class="headerlink" title="Tectonic搭建集群"></a>Tectonic搭建集群</h2><p>1.下载tectonic sandbox<br>2.vagrant up</p>
+<h2 id="Play-with-kubernetes"><a href="#Play-with-kubernetes" class="headerlink" title="Play with kubernetes"></a>Play with kubernetes</h2><h2 id="扩展"><a href="#扩展" class="headerlink" title="扩展"></a>扩展</h2><p>1.多个class切换</p>
+<p>合并context文件.kube<br>查看context:kubectl config get-contexts<br>切换context:kubectl config use-context {context name}</p>
+<p>2.补全<br>kubectl completion bash<br>source {bash 文件}</p>
+<h2 id="查考文档"><a href="#查考文档" class="headerlink" title="查考文档"></a>查考文档</h2><ul>
+<li><a href="https://www.kubernetes.org.cn/" target="_blank" rel="noopener">kubernetes 中文社区</a></li>
+</ul>
+]]></content>
+      <categories>
+        <category>kubernetes</category>
+      </categories>
+      <tags>
+        <tag>编程学习</tag>
+        <tag>Kubernetes</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>K8s基础网络Cluster Network</title>
+    <url>/2020/03/02/Kubernetes/6.k8s%E5%9F%BA%E7%A1%80%E7%BD%91%E7%BB%9CCluster%20Network/</url>
+    <content><![CDATA[<p>##　K8s基础网络Cluster Network</p>
+<p>node1：192.168.61.11</p>
+<p>node2：192.168.61.12</p>
+<p>集群中通过插件（如flannel网络插件）实现overlay网络，通过overlay网络可以实现：</p>
+<ul>
+<li><p>集群内所有的容器能相互通讯</p>
+</li>
+<li><p>集群内所有的nodes能相互通讯</p>
+</li>
+</ul>
+<p>pod被外界访问</p>
+<p>使用pod ip 会出问题，不稳定</p>
+<p>service提供稳定ip</p>
+<p>kubectl expose命令，会给我们的pod创建一个Service，供外部访问</p>
+<p>kubectl expose <resource> <name></name></resource></p>
+<p>kubectl get svc</p>
+<p>curl </p>
+<p>通过yml文件定义资源</p>
+<h2 id="Service主要有三种类型："><a href="#Service主要有三种类型：" class="headerlink" title="Service主要有三种类型："></a>Service主要有三种类型：</h2><p>ClusterIP（集群内可访问，Service IP 和 Pod IP 一一对应，service ip 不变，pod ip 可变）</p>
+<p>NodePort（绑定到node上）</p>
+<p>LoadBalancer（一般云服务商提供）</p>
+<p>基于DNS</p>
+<p>service 会做负载均衡</p>
+<p>kubectl expose deployment <deployment name></deployment></p>
+<p>kubectl get svc</p>
+<p>不宕机更新</p>
+<p>kubectl edit   deployment <deployment name></deployment></p>
+<p>rolling update</p>
+<h2 id="NodePort-实际中也不怎么用，多用loadBalancer，ExternalName-（通过DNS的方式）"><a href="#NodePort-实际中也不怎么用，多用loadBalancer，ExternalName-（通过DNS的方式）" class="headerlink" title="NodePort(实际中也不怎么用，多用loadBalancer，ExternalName （通过DNS的方式） )"></a>NodePort(实际中也不怎么用，多用loadBalancer，ExternalName （通过DNS的方式） )</h2><p>kubect get pods</p>
+<p>yaml文件命名：pod_nginx</p>
+<p>服务创建：</p>
+<p>kubectl get pods </p>
+<p>kubectl expose pods <pod name> –type=Nodeport</pod></p>
+<p>kubectl describe node <node-name></node-name></p>
+<p>暴露到公网上</p>
+<p>pod_nginx.yml</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">nginx-pod</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">nginx</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">containers:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nginx-container</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">nginx</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nginx-port</span></span><br><span class="line">      <span class="attr">containerPort:</span> <span class="number">80</span></span><br></pre></td></tr></table></figure>
+<p>service_nginx.yml</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Service</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">nginx-service</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">ports:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">port:</span> <span class="number">8080</span></span><br><span class="line">    <span class="attr">nodePort:</span> <span class="number">8080</span></span><br><span class="line">    <span class="attr">targetPort:</span> <span class="string">nginx-port</span></span><br><span class="line">    <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">nginx</span></span><br><span class="line">  <span class="attr">type:</span> <span class="string">NodePort</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>port 需要暴露的端口</p>
+<p>nodePort：需要暴露到哪</p>
+<p>targetPort:pod 中的定义的端口名称</p>
+<p>selector：通过lable筛选pod</p>
+<p>type：NodePort</p>
+</blockquote>
+<p>显示pod lable：kubectl get pods –show-labels</p>
+<p>服务删除</p>
+<p>kubectl delete service <service-name></service-name></p>
+<h2 id="资源labels-（pod-）"><a href="#资源labels-（pod-）" class="headerlink" title="资源labels:（pod ）"></a>资源labels:（pod ）</h2><p>key:value</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">busybox-pod</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">containers:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">busybox-container</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">busybox</span></span><br><span class="line">    <span class="attr">command:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">sleep</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">"360000"</span></span><br></pre></td></tr></table></figure>
+<p>nodeSelector</p>
+<p>​    hardware：good</p>
+<p>设置lable</p>
+<p>kubectl label <resource> <resource name> <lable key>=<lable value></lable></lable></resource></resource></p>
+]]></content>
+      <categories>
+        <category>kubernetes</category>
+      </categories>
+      <tags>
+        <tag>编程学习</tag>
+        <tag>Kubernetes</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>容器的基本监控</title>
+    <url>/2020/03/02/Kubernetes/7.%E5%AE%B9%E5%99%A8%E7%9A%84%E5%9F%BA%E6%9C%AC%E7%9B%91%E6%8E%A7/</url>
+    <content><![CDATA[<p>容器中运行的进程：docker top <container id></container></p>
+<p>容器的系统占用状态：docker stats</p>
+<p>图形化监控工具——weavescope</p>
+<p>scope lauch 192.168.99</p>
+<h2 id="运行资源监控——heapster-Grafana-InfulxDB"><a href="#运行资源监控——heapster-Grafana-InfulxDB" class="headerlink" title="运行资源监控——heapster+Grafana+InfulxDB"></a>运行资源监控——heapster+Grafana+InfulxDB</h2><p>wrk -t12 -c 400 -d30s http：//192.168.</p>
+<h2 id="根据资源占用自动横向扩展"><a href="#根据资源占用自动横向扩展" class="headerlink" title="根据资源占用自动横向扩展"></a>根据资源占用自动横向扩展</h2><p>kubectl run php-apache –image=k8s.gcr.ip/hpa-example –requests=cpu=100m –expose –port=80</p>
+<p>kubectl autoscale deployment php-apache –cpu-percent=50 –min=1 –max=10</p>
+<p>获取水平扩展：kubectl ger horizontalpodautoscaler</p>
+<p>while true;do wget -q -o- <a href="http://10.105.138.235;done" target="_blank" rel="noopener">http://10.105.138.235;done</a></p>
+<h2 id="Log的采集和展示"><a href="#Log的采集和展示" class="headerlink" title="Log的采集和展示"></a>Log的采集和展示</h2><p>ELK Stack（ElasticSearch+Logstash+Kibana）</p>
+<p>hosted log服务</p>
+<ul>
+<li>Fluentd（log转发）</li>
+<li>ElasticSearch（log Index）</li>
+<li>Kibana（log可视化）</li>
+<li>LogTrail（log UI查看）</li>
+</ul>
+<p>为所有节点打lable（Fluentd需要）：kubectl label node –all beta.kubernetes.io/fluentd-ds-ready=true</p>
+<p>创建logging目录下的所有资源：kubectl create -f logging/</p>
+<p>在kubernetes/kubernetes源码的cluster/fluentd-elasticsearch目录中可以找到Log采集和展示需要的yaml文件（es，fluentd，kibana）</p>
+<h2 id="K8s集群监控方案Prometheus"><a href="#K8s集群监控方案Prometheus" class="headerlink" title="K8s集群监控方案Prometheus"></a>K8s集群监控方案Prometheus</h2><p>pull方式</p>
+]]></content>
+      <categories>
+        <category>kubernetes</category>
+      </categories>
+      <tags>
+        <tag>编程学习</tag>
+        <tag>Kubernetes</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Angular系列六：数据绑定</title>
+    <url>/2020/03/02/Angular/5.0%E6%95%B0%E6%8D%AE%E7%BB%91%E5%AE%9A%E5%93%8D%E5%BA%94%E5%BC%8F%E7%BC%96%E7%A8%8B%E5%92%8C%E7%AE%A1%E9%81%93/</url>
+    <content><![CDATA[<p>##　数据绑定</p>
+<h2 id="angular提供的数据绑定："><a href="#angular提供的数据绑定：" class="headerlink" title="angular提供的数据绑定："></a>angular提供的数据绑定：</h2><ul>
+<li><p>插值表达式：使用插值表达式将一个表达式的值显示在模板上。示例：</p>
+  <figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">h1</span>&gt;</span>&#123;&#123;productTitle&#125;&#125;<span class="tag">&lt;<span class="name">hi</span>&gt;</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>属性绑定：使用方括号将一个表达式的值赋给Html标签的一个属性。示例：</p>
+  <figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">img</span> [<span class="attr">src</span>] =<span class="string">"imgUrl"</span>&gt;</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>事件绑定：使用小括号将组件控制器的一个方法指定为模板中事件的处理器。示例：</p>
+  <figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">button</span> (<span class="attr">click</span>)=<span class="string">"toProductDetail"</span>&gt;</span>商品详情<span class="tag">&lt;/<span class="name">button</span>&gt;</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>双向绑定：使用“[(ngModel)]”将控制器和模板关联起来，任何一方的改变都会引起另一方的改变。示例：</p>
+  <figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">input</span> [(<span class="attr">ngModel</span>)]=<span class="string">"name"</span>&gt;</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h2 id="使用插值表达式（控制器→模板DOM属性）"><a href="#使用插值表达式（控制器→模板DOM属性）" class="headerlink" title="使用插值表达式（控制器→模板DOM属性）"></a>使用插值表达式（控制器→模板DOM属性）</h2><figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">h1</span>&gt;</span>&#123;&#123;productTitle&#125;&#125;<span class="tag">&lt;/<span class="name">h1</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">h1</span>&gt;</span>&#123;&#123;表达式&#125;&#125;<span class="tag">&lt;/<span class="name">h1</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注意：angular会将“插值表达式”翻译为“属性绑定”</p>
+</blockquote>
+<h2 id="属性绑定"><a href="#属性绑定" class="headerlink" title="属性绑定"></a>属性绑定</h2><h3 id="html属性和dom属性的区别"><a href="#html属性和dom属性的区别" class="headerlink" title="html属性和dom属性的区别"></a>html属性和dom属性的区别</h3><p>当浏览器渲染界面时，会为html标签生成一个类型为HTMLElement的Dom节点，每个dom都有自己的属性和方法。如input标签生成domInputElement</p>
+<table>
+<thead>
+<tr>
+<th>属性</th>
+<th>描述</th>
+<th>获取方式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>html属性</td>
+<td>不可变，其值为初始值</td>
+<td>event.target.value</td>
+</tr>
+<tr>
+<td>dom属性</td>
+<td>可变，其值为当前值</td>
+<td>event.target.getAttribute(‘value’)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="HTML属性和DOM属性的关系"><a href="#HTML属性和DOM属性的关系" class="headerlink" title="HTML属性和DOM属性的关系"></a>HTML属性和DOM属性的关系</h3><ul>
+<li>少量HTML属性和DOM属性之间有着1：1的映射，如id</li>
+<li>有些HTML属性没有对应的DOM属性，如colspan</li>
+<li>有些DOM属性没有对应的HTML属性，如textContent</li>
+<li>就算名字相同，HTML属性和DOM属性也不是同一样东西</li>
+<li>HTML属性的值指定了初始值，DOM属性的值表示当前值。</li>
+<li>HTML属性的值不能改变，DOM属性的值可以改变。</li>
+<li>模板绑定使用DOM属性和事件来工作的，而不是Html属性</li>
+</ul>
+<p>实战：为一个input标签设置“value”属性并添加“input”事件，“value”属性值为“初始值”，“input”事件将触发控制器的onInput()方法打印出标签的Html属性和Dom属性值</p>
+<ul>
+<li><p>模板代码</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">input</span> <span class="attr">value</span>=<span class="string">"初始值"</span> (<span class="attr">input</span>)=<span class="string">"onInput($event)"</span>&gt;</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>控制器代码</p>
+<figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">onInput(event: <span class="built_in">any</span>): <span class="built_in">void</span> &#123;</span><br><span class="line">  <span class="built_in">console</span>.log(event);</span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">'dom属性value值：'</span> + event.target.value);</span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">'html属性value值：'</span> + event.target.getAttribute(<span class="string">'value'</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="DOM属性绑定（控制器→模板DOM属性）"><a href="#DOM属性绑定（控制器→模板DOM属性）" class="headerlink" title="DOM属性绑定（控制器→模板DOM属性）"></a>DOM属性绑定（控制器→模板DOM属性）</h3><p>angular中常使用的是DOM属性绑定。</p>
+<h3 id="HTML属性绑定（控制器→模板HTML属性）"><a href="#HTML属性绑定（控制器→模板HTML属性）" class="headerlink" title="HTML属性绑定（控制器→模板HTML属性）"></a>HTML属性绑定（控制器→模板HTML属性）</h3><p>当某些标签的HTML属性没有与之对应的DOM属性时，需要使用HTML属性绑定。例如table标签colspan只有HTML属性而没有DOM属性。</p>
+<ul>
+<li><p>基本Html属性绑定</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">td</span> [<span class="attr">attr.colspan</span>]=<span class="string">"size"</span>&gt;</span>...<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">td</span> [<span class="attr">attr.HTML</span>属性]=<span class="string">"控制器属性"</span>&gt;</span>...<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>css类绑定</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"xxx yyy"</span> [<span class="attr">class</span>]=<span class="string">"someExprission"</span>&gt;</span>...<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> [<span class="attr">class.special</span>]=<span class="string">"isSpecial"</span>&gt;</span>...<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">div</span> [<span class="attr">class.css</span>类名]=<span class="string">"布尔值"</span>&gt;</span>...<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> [<span class="attr">ngClass</span>]=<span class="string">"&#123;xxx:isX,yyy:isY&#125;"</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">div</span> [<span class="attr">ngClass</span>]=<span class="string">"&#123;css类：表达式true或false&#125;"</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>样式绑定<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">button</span> [<span class="attr">style.color</span>]=<span class="string">"isSpecial?'red':'green' "</span>&gt;</span>...<span class="tag">&lt;/<span class="name">button</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">button</span> [<span class="attr">style.</span>样式属性<span class="attr">.</span>样式属性值单位]=<span class="string">"判断条件?'结果为true样式属性值':'结果为false样式属性值' "</span>&gt;</span>...<span class="tag">&lt;/<span class="name">button</span>&gt;</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> [<span class="attr">ngStyle</span>]=<span class="string">"&#123;'font-style':this.canSave?'italic':'normal'&#125;"</span>&gt;</span>...<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">div</span> [<span class="attr">ngStyle</span>]=<span class="string">"&#123;'样式属性':判断条件?'结果为true样式属性值':'结果为false样式属性值'&#125;"</span>&gt;</span>...<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h2 id="事件绑定（模板→控制器）"><a href="#事件绑定（模板→控制器）" class="headerlink" title="事件绑定（模板→控制器）"></a>事件绑定（模板→控制器）</h2><figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">input</span> (<span class="attr">input</span>)=<span class="string">"onInputEvent($event)"</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">input</span> (事件名称)=<span class="string">"控制器方法名称(浏览器事件对象)"</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<ol>
+<li><p>事件绑定结构：<br>| 结构 | 描述 |<br>| —— | ——|<br>| 小括号 | 表示这是个事件绑定 |<br>| 事件名称 | 事件可以为：<ul><li>标准的DOM事件</li><li>自定义事件</li></ul>示例中为input事件 |<br>| 组件方法名称 | 示例中为onInputEvent |<br>| 浏览器事件对象 | 示例中为$event |</p>
+<blockquote>
+<p>当事件发生时执行的表达式除了上述的控制器方法，还可以为任意表达式。</p>
+</blockquote>
+</li>
+<li><p>实战：为一个“点我”按钮添加onlick事件，事件触发时调用控制器中的onclick()方法打印出按钮的事件对象。</p>
+<ul>
+<li><p>模板代码</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">button</span> (<span class="attr">click</span>)=<span class="string">"onClick($event)"</span>&gt;</span>点我<span class="tag">&lt;/<span class="name">button</span>&gt;</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>控制器代码</p>
+<figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">onClick(event: object): <span class="built_in">void</span> &#123;</span><br><span class="line">  <span class="built_in">console</span>.log(event);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+</ol>
+<h2 id="双向绑定"><a href="#双向绑定" class="headerlink" title="双向绑定"></a>双向绑定</h2><p>双向绑定=事件绑定+属性绑定。<br>不过我们并不知道双向绑定中绑定的具体事件，angular将会为不同标签绑定不同的事件不同。</p>
+<blockquote>
+<p>使用双向绑定时，需要在模块的@NgModule注解的imports中引入FormsModule。</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>Angular</category>
+      </categories>
+      <tags>
+        <tag>编程学习</tag>
+        <tag>Angular</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Angular系列七：响应式编程</title>
+    <url>/2020/03/02/Angular/5.6%E5%93%8D%E5%BA%94%E5%BC%8F%E7%BC%96%E7%A8%8B/</url>
+    <content><![CDATA[<h1 id="响应式编程"><a href="#响应式编程" class="headerlink" title="响应式编程"></a>响应式编程</h1><p>观察者模式<br><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">可观察对象-&gt;观察者:调用</span><br><span class="line">观察者-&gt;可观察对象:注册</span><br></pre></td></tr></table></figure></p>
+<p>Rxjs编程模型<br><figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">var</span> subscription = Observable.from([<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>])</span><br><span class="line">      .filter(<span class="function"><span class="params">e</span> =&gt;</span> e % <span class="number">2</span> == <span class="number">0</span>)</span><br><span class="line">      .map(<span class="function"><span class="params">e</span> =&gt;</span> e * e)</span><br><span class="line">      .subscribe(</span><br><span class="line">        e =&gt; <span class="built_in">console</span>.log(e),</span><br><span class="line">        error =&gt; <span class="built_in">console</span>.error(error),</span><br><span class="line">        () =&gt; <span class="built_in">console</span>.log(<span class="string">'结束了'</span>)</span><br><span class="line">      );</span><br></pre></td></tr></table></figure></p>
+<p>模型解析</p>
+<ul>
+<li>可观察对象Observable（流）：表示一组值或者事件的集合</li>
+<li>观察者Observer：一个回掉函数的集合，包括成功时返回值、error时返回值、完成时放回值</li>
+<li>订阅Subsciption：表示一个可观察对象，主要用于取消注册。subscription.unsubscribe()</li>
+<li>操作符Operators：纯粹的函数，使开发者可以以函数编程的方式处理集合。</li>
+</ul>
+<p>响应式编程<br>异步数据流编程。在响应式编程中你可以创建所有事务的数据流，流无处不在。例如变量、用户输入、事件、属性、缓存、数据结构在响应式编程中都能是流。</p>
+<ol>
+<li>创建流</li>
+</ol>
+<ul>
+<li><p>通过集合创建流</p>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line">Observable.from([<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>])</span><br><span class="line">Observable.from(集合)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>通过事件创建流</p>
+  <figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">var</span> button=<span class="built_in">document</span>.querySelector(<span class="string">'button'</span>);</span><br><span class="line">Observable.fromEvent(button,<span class="string">'click'</span>)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<ol start="2">
+<li><p>组合过滤</p>
+ <figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line">filter(<span class="function"><span class="params">e</span> =&gt;</span> e % <span class="number">2</span> == <span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>流转换</p>
+ <figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line">map(<span class="function"><span class="params">e</span> =&gt;</span> e * e)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<p>实战：将集合[1,2,3,4]转变为一个流，过滤出集合中的偶数，并将偶数的平方输出到控制台</p>
+<figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">Observable.from([<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>])</span><br><span class="line">    .filter(<span class="function"><span class="params">e</span> =&gt;</span> e % <span class="number">2</span> == <span class="number">0</span>)</span><br><span class="line">    .map(<span class="function"><span class="params">e</span> =&gt;</span> e * e)</span><br><span class="line">    .subscribe(</span><br><span class="line">      e =&gt; <span class="built_in">console</span>.log(e),</span><br><span class="line">      err =&gt; <span class="built_in">console</span>.error(err),</span><br><span class="line">      () =&gt; <span class="built_in">console</span>.log(<span class="string">'结束了'</span>)</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<p>使用响应式编程做事件处理<br>实战：<br>模板代码<br><figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">input</span> [<span class="attr">formControl</span>]=<span class="string">"searchInput"</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>控制器代码<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">searchInput: FormControl = <span class="keyword">new</span> FormControl();</span><br><span class="line"></span><br><span class="line"><span class="keyword">constructor</span>(<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">this</span>.searchInput.valueChanges</span><br><span class="line">    .debounceTime(<span class="number">500</span>)</span><br><span class="line">    .subscribe(<span class="function"><span class="params">stockCode</span> =&gt;</span> <span class="keyword">this</span>.getStockCode(stockCode));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">getStockCode(value: <span class="built_in">string</span>) &#123;</span><br><span class="line">  <span class="built_in">console</span>.log(value);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>FormControl对象，每一个表单元素都会默认有一个FormControl。<br>使用FormControl时需要引入ReactiveFormsModule<br>angular中把事件当作永不结束的流来处理,如valueChange事件组成一个可订阅的流</p>
+</blockquote>
+<p>模板本地变量：使用#模板本地变量来代表标签元素。如#myfield代表input标签</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">input</span> #<span class="attr">myfield</span> (<span class="attr">key</span>)=<span class="string">"onKey(myfield.value)"</span>&gt;</span></span><br></pre></td></tr></table></figure>
+]]></content>
+      <categories>
+        <category>Angular</category>
+      </categories>
+      <tags>
+        <tag>编程学习</tag>
+        <tag>Angular</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Angular系列八：管道</title>
+    <url>/2020/03/02/Angular/5.7%E7%AE%A1%E9%81%93/</url>
+    <content><![CDATA[<h1 id="管道"><a href="#管道" class="headerlink" title="管道"></a>管道</h1><p>管道可以实现原始值到期望值的转换<br>多个管道可以链接配合使用</p>
+<h2 id="Angular常见管道"><a href="#Angular常见管道" class="headerlink" title="Angular常见管道"></a>Angular常见管道</h2><ul>
+<li>uppercase管道</li>
+<li>lowercase管道</li>
+<li>titlecase管道</li>
+<li><p>date管道</p>
+  <figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">p</span>&gt;</span>&#123;&#123;birthDay | date:'yyyy-MM-dd HH:mm:ss'&#125;&#125;<span class="tag">&lt;/<span class="name">p</span>&gt;</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>number管道</p>
+  <figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">p</span>&gt;</span>&#123;&#123;3.1415926|number:'2.1-2'&#125;&#125;<span class="tag">&lt;/<span class="name">p</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">p</span>&gt;</span>&#123;&#123;数字|number:'整数位数.最少小数位数-最多小数位数'&#125;&#125;<span class="tag">&lt;/<span class="name">p</span>&gt;</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>async管道</p>
+  <figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">p</span>&gt;</span>&#123;&#123;| aysnc&#125;&#125;<span class="tag">&lt;/<span class="name">p</span>&gt;</span> 处理异步响应流</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h2 id="自定义管道"><a href="#自定义管道" class="headerlink" title="自定义管道"></a>自定义管道</h2><p>实战：定义一个名为multiple的管道。一个数字通过该管道将返回“数字*参数”</p>
+<ol>
+<li>使用<code>ng g pipe pipe/multiple</code>生成管道</li>
+<li>在模块的@NgModule注释的declarations中声明MultiplePipe管道 </li>
+<li><p>编写管道规则</p>
+ <figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">transform(value: <span class="built_in">number</span>, args?: <span class="built_in">number</span>): <span class="built_in">any</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (!args) &#123;args = <span class="number">1</span>;&#125;</span><br><span class="line">    <span class="keyword">return</span> value * args;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>使用管道</p>
+ <figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">&lt;p&gt;&#123;&#123;<span class="number">3</span>|multiple:<span class="number">2</span>&#125;&#125;&lt;<span class="regexp">/p&gt;</span></span><br></pre></td></tr></table></figure></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Angular</category>
+      </categories>
+      <tags>
+        <tag>编程学习</tag>
+        <tag>Angular</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Angular系列九：组件间通讯</title>
+    <url>/2020/03/02/Angular/6.0%E7%BB%84%E4%BB%B6%E9%97%B4%E9%80%9A%E8%AE%AF/</url>
+    <content><![CDATA[<h2 id="输入属性（父组件-→-子组件）"><a href="#输入属性（父组件-→-子组件）" class="headerlink" title="输入属性（父组件 → 子组件）"></a>输入属性（父组件 → 子组件）</h2><p>使用@Input注解可以声明一个输入属性。声明输入属性可以理解为自定义属性<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Input</span>()</span><br><span class="line">stockCode:<span class="built_in">string</span>;</span><br></pre></td></tr></table></figure></p>
+<p>实战：定义一个具有stockCode输入属性的order子组件，在app组件中使用order组件，并将app组件中一个input标签的值传给stockCode输入属性。</p>
+<p>order组件模板代码：<br>   <figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">p</span>&gt;</span>order子组件：&#123;&#123;stockCode&#125;&#125;<span class="tag">&lt;/<span class="name">p</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>order组件控制器代码：<br>   <figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Input</span>()</span><br><span class="line">stockCode: <span class="built_in">string</span>;</span><br></pre></td></tr></table></figure></p>
+<p>app组件模板代码：<br><figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">input</span> (<span class="attr">input</span>)=<span class="string">"onInput($event)"</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">app-order</span> [<span class="attr">stockCode</span>]=<span class="string">"stock"</span>&gt;</span><span class="tag">&lt;/<span class="name">app-order</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>app组件控制器代码：<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">stock: <span class="built_in">string</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">constructor</span>(<span class="params"></span>) &#123;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">onInput(event: <span class="built_in">any</span>) &#123;</span><br><span class="line">    <span class="keyword">this</span>.stock = event.target.value;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>处理通过输入属性传递数据，还可以通过路由参数传递数据<br>使用路由参数传递数据需要注入：routeInfo: ActivatedRoute</p>
+</blockquote>
+<h2 id="输出属性（子组件-→-父组件）"><a href="#输出属性（子组件-→-父组件）" class="headerlink" title="输出属性（子组件 → 父组件）"></a>输出属性（子组件 → 父组件）</h2><p>声明一个输出属性可以理解为自定义事件。</p>
+<ul>
+<li>定义输出属性<figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Output</span>(<span class="string">'priceChange'</span>)</span><br><span class="line">priceChange: EventEmitter&lt;<span class="built_in">number</span>&gt; = <span class="keyword">new</span> EventEmitter();</span><br><span class="line"><span class="meta">@Output</span>(<span class="string">'自定义事件名称'</span>)</span><br><span class="line">自定义事件名: EventEmitter&lt;自定义事件的返回类型&gt; = <span class="keyword">new</span> EventEmitter();</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<blockquote>
+<p>当@Output()括号内为空时，默认“自定义事件名称”为“自定义事件名”</p>
+<ul>
+<li>发射自定义事件<figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">this</span>.priceChange.emit(num);</span><br><span class="line"><span class="keyword">this</span>.自定义事件名.emit(发射实际值);</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</blockquote>
+<ul>
+<li>父组件中使用自定义事件接受返回值<figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">&lt;app-price-quote (priceChange)=<span class="string">"onPriceChange($event)"</span>&gt;&lt;<span class="regexp">/app-price-quote&gt;</span></span><br><span class="line"><span class="regexp">&lt;app-price-quote (priceChange)="事件处理函数(自定义事件返回值)"&gt;&lt;/</span>app-price-quote&gt;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>实战：新建一个具有priceChange输出属性的price-quote组件。priceChange事件中包含实时变化的数字。app组件需要获取到这个数字并显示<br>price-quote组件控制器代码</p>
+<figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Output</span>(<span class="string">'priceChange'</span>)</span><br><span class="line">priceChange: EventEmitter&lt;<span class="built_in">number</span>&gt; = <span class="keyword">new</span> EventEmitter();</span><br><span class="line"></span><br><span class="line"><span class="keyword">constructor</span>(<span class="params"></span>) &#123;</span><br><span class="line">  setInterval(<span class="function"><span class="params">()</span> =&gt;</span> &#123;</span><br><span class="line">    <span class="keyword">const</span> num: <span class="built_in">number</span> = <span class="built_in">Math</span>.random();</span><br><span class="line">    <span class="keyword">this</span>.priceChange.emit(num);</span><br><span class="line">  &#125;, <span class="number">1000</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>app组件模板代码<br><figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">app-price-quote</span> (<span class="attr">priceChange</span>)=<span class="string">"onPriceChange($event)"</span>&gt;</span><span class="tag">&lt;/<span class="name">app-price-quote</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">p</span>&gt;</span>app组件:&#123;&#123;price&#125;&#125;<span class="tag">&lt;/<span class="name">p</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>app组件控制器代码<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">price: <span class="built_in">string</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">constructor</span>(<span class="params"></span>) &#123;&#125;</span><br><span class="line"></span><br><span class="line">onPriceChange(price: <span class="built_in">number</span>) &#123;</span><br><span class="line">  <span class="keyword">this</span>.price = price.toString();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="中间人模式"><a href="#中间人模式" class="headerlink" title="中间人模式"></a>中间人模式</h2><p>编写组件时要考虑可重用性，要解耦。故先考虑好那些组件要重用，需要那些中间人，然后再写代码。</p>
+<p>Json.stringfy</p>
+]]></content>
+      <categories>
+        <category>Angular</category>
+      </categories>
+      <tags>
+        <tag>编程学习</tag>
+        <tag>Angular</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Kubernetes简介</title>
+    <url>/2020/03/02/Kubernetes/1.Kubernetes%E7%AE%80%E4%BB%8B/</url>
+    <content><![CDATA[<h2 id="Kubernetes简介"><a href="#Kubernetes简介" class="headerlink" title="Kubernetes简介"></a>Kubernetes简介</h2><ul>
+<li><p>Kubernetes是用于自动部署，扩展和管理容器化应用程序的开源系统</p>
+</li>
+<li><p>生产级别的容器编排的工具</p>
+</li>
+<li><p>数据中心os</p>
+</li>
+<li><p>新生代的云平台</p>
+</li>
+</ul>
+<h2 id="Kubernetes系统组件"><a href="#Kubernetes系统组件" class="headerlink" title="Kubernetes系统组件"></a>Kubernetes系统组件</h2><p><img src="./media/kubernetes_system_compenent.png" alt></p>
+<h2 id="kubernetes技术架构"><a href="#kubernetes技术架构" class="headerlink" title="kubernetes技术架构"></a>kubernetes技术架构</h2><blockquote>
+<p>后期补充</p>
+</blockquote>
+<h2 id="主要组成部分："><a href="#主要组成部分：" class="headerlink" title="主要组成部分："></a>主要组成部分：</h2><ul>
+<li>Master：管理节点，提供API接口进行操作</li>
+<li>Node：工作节点</li>
+<li>API</li>
+<li>UI：User interface</li>
+<li>CLI：命令行接口</li>
+</ul>
+<h2 id="Master节点的组成及功能"><a href="#Master节点的组成及功能" class="headerlink" title="Master节点的组成及功能"></a>Master节点的组成及功能</h2><ul>
+<li>API Server：暴露API给外部（如UI、CLI）访问，</li>
+<li>Scheduler：通过api部署应用，应用需要2个容器，容器需要运行在哪个节点上，就是由调度模块负责</li>
+<li>Controller：容器负载均衡，扩展，维护pod数量</li>
+<li>etcd：分布式存储，存储k8s的状态和key</li>
+</ul>
+<h2 id="Node节点的组成及功能"><a href="#Node节点的组成及功能" class="headerlink" title="Node节点的组成及功能"></a>Node节点的组成及功能</h2><ul>
+<li>pod：具有相同的namespace（user namespace、network namespace）的容器集合</li>
+<li>Docker（其他容器也行）</li>
+<li>kubelet：node接受master控制，就是通过kubelet</li>
+<li>kube-proxy：和网路相关，端口的代理和转发、也可以负载均衡</li>
+<li>Fluentd：日志的采集、存储、查询</li>
+<li>插件（可选）：DNS、UI，etc</li>
+</ul>
+]]></content>
+      <categories>
+        <category>kubernetes</category>
+      </categories>
+      <tags>
+        <tag>编程学习</tag>
+        <tag>Kubernetes</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Angular系列十：生命钩子</title>
+    <url>/2020/03/02/Angular/6.5%E7%94%9F%E5%91%BD%E9%92%A9%E5%AD%90/</url>
+    <content><![CDATA[<p>##　组件的生命周期</p>
+<p>constructor（实例化对象）<br>Onchanges （有输入属性时被调用,且输入属性为不可变参数）初始化输入属性<br>OnInit（初始化除输入属性外其他所有属性）<br>DoCheck（做一次变更检测）<br>所有属性都应该被赋予该赋的值</p>
+<p>渲染视图<br>AfterContentInit<br>AfterContentChecked<br>子组件生命周期<br>AfterViewInit<br>AfterViewChecked<br>OnDestroy</p>
+<p>变更检测<br>Onchanges<br>DoCheck<br>AfterContentChecked<br>AfterViewChecked</p>
+<p>组件销毁<br>路由跳转时销毁</p>
+<h2 id="Onchanges"><a href="#Onchanges" class="headerlink" title="Onchanges"></a>Onchanges</h2><p>父组件初始化子组件或修改子组件的输入参数（且输入属性为不可变参数）时调用</p>
+<p>可变对象和不可变对象<br>javaScript中，字符串为不可变对象，对象为可变对象<br>console.log(JSON.strange(changes,null,2))</p>
+<h2 id="变更检测和DoCheck钩子"><a href="#变更检测和DoCheck钩子" class="headerlink" title="变更检测和DoCheck钩子"></a>变更检测和DoCheck钩子</h2><p>zone.js负责变更检测，使原生的事件<br>组件属性的模板上</p>
+<p>变更检测的2种策略<br>default策略：检测所有组件树<br>onPush策略：输入属性变化，才检测该组件及其子组件</p>
+<p>根组件开始检测<br>DoCheck钩子<br>有事件发生就会促发<br>带Check关键字的钩子，必须轻量级，否则会影响性能</p>
+<h2 id="view钩子"><a href="#view钩子" class="headerlink" title="view钩子"></a>view钩子</h2><p>viewChild装饰器<br>父组件调用子组件的方法<br><figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">app-child</span> #<span class="attr">child1</span>&gt;</span><span class="tag">&lt;<span class="name">app-child</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>控制器调用<br><figure class="highlight ts"><table><tr><td class="code"><pre><span class="line"><span class="meta">@ViewChild</span>(<span class="string">"child1"</span>)</span><br><span class="line">child1:ChildComponent;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">this</span>.child.greting(<span class="string">"Tom"</span>)</span><br></pre></td></tr></table></figure></p>
+<p>模板调用<br><figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">button</span> (<span class="attr">click</span>)=<span class="string">"child2.greting('jerry')"</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<h2 id="AfterViewInit"><a href="#AfterViewInit" class="headerlink" title="AfterViewInit"></a>AfterViewInit</h2><p>初始化时，数据和内容已组装完，且呈现给用户看之后被调用</p>
+<h2 id="AfterViewChecked"><a href="#AfterViewChecked" class="headerlink" title="AfterViewChecked"></a>AfterViewChecked</h2><p>变更检测发生时，数据和内容已组装完，且呈现给用户看之后被调用</p>
+<p>angular禁止在数据和内容已组装完，且呈现给用户看之后改变ui中绑定的值，会报错<br>使用setTImeout（（）=》{<br>​    this.message=”hello”;<br>},0）;<br>解决</p>
+<h2 id="ngContent指令"><a href="#ngContent指令" class="headerlink" title="ngContent指令"></a>ngContent指令</h2><p>父组件的任意片段投影到子组件上<br>投影<br>子组件<br><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"></span><br><span class="line">&lt;ng-content select=&quot;.header&quot;&gt;&lt;/ng-content&gt;</span><br></pre></td></tr></table></figure></p>
+<p>父组件<br><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&lt;app-child&gt;</span><br><span class="line">&lt;div class=&quot;header&quot;&gt;投影&lt;/div&gt;</span><br><span class="line">&lt;/app-child&gt;</span><br></pre></td></tr></table></figure></p>
+<p>浏览器专用<br><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&lt;div [inner-HTML]=&quot;divContent&quot;&gt;&lt;/div&gt;</span><br></pre></td></tr></table></figure></p>
+<h2 id="AfterContentInit钩子"><a href="#AfterContentInit钩子" class="headerlink" title="AfterContentInit钩子"></a>AfterContentInit钩子</h2><p>初始化时，被投影的内容组装完后被调用</p>
+<h2 id="AfterContentChecked钩子"><a href="#AfterContentChecked钩子" class="headerlink" title="AfterContentChecked钩子"></a>AfterContentChecked钩子</h2><p>变更检测时，被投影的内容组装完后被调用</p>
+<p>先父后子</p>
+<h2 id="OnDestroy钩子"><a href="#OnDestroy钩子" class="headerlink" title="OnDestroy钩子"></a>OnDestroy钩子</h2><p>路由跳转时调用<br>常用于销毁资源，如反订阅一个流，清除定时器之类的</p>
+<p>实战<br>unshift<br>this.comment.unshift(comment)</p>
+]]></content>
+      <categories>
+        <category>Angular</category>
+      </categories>
+      <tags>
+        <tag>编程学习</tag>
+        <tag>Angular</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Angular系列十一：Angular简介表单处理</title>
+    <url>/2020/03/02/Angular/7.0%E8%A1%A8%E5%8D%95%E5%A4%84%E7%90%86/</url>
+    <content><![CDATA[<h2 id="表单处理"><a href="#表单处理" class="headerlink" title="表单处理"></a>表单处理</h2><p>现在web应用表单应该满足的用户需求：</p>
+<ul>
+<li>自定义校验规则</li>
+<li>友好的提示信息</li>
+<li>彼此依赖的字段应该一起校验</li>
+<li>可以控制提交值</li>
+<li>可以提交方式（http方式，ajax异步请求，websocket消息）</li>
+</ul>
+<h2 id="纯HTML表单"><a href="#纯HTML表单" class="headerlink" title="纯HTML表单"></a>纯HTML表单</h2><p>纯HTML表单支持：</p>
+<ul>
+<li>显示表单项</li>
+<li>检验用户输入</li>
+<li>提交表单数据</li>
+</ul>
+<p>实战：定义一个注册表单，post方式提交到“/register”，表单字段要求如下：<br>​        账号：不能为空，只能是大小写字母<br>​        电话：11位数字<br>​        注册：提交按钮</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">form</span> <span class="attr">action</span>=<span class="string">"/register"</span> <span class="attr">method</span>=<span class="string">"post"</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">div</span>&gt;</span>账号：<span class="tag">&lt;<span class="name">input</span> <span class="attr">type</span>=<span class="string">"text"</span> <span class="attr">required</span> <span class="attr">pattern</span>=<span class="string">"[a-zA-Z]+"</span> <span class="attr">maxlength</span>=<span class="string">"6"</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">div</span>&gt;</span>电话：<span class="tag">&lt;<span class="name">input</span> <span class="attr">type</span>=<span class="string">"text"</span> <span class="attr">pattern</span>=<span class="string">"[0-9]+"</span> <span class="attr">minlength</span>=<span class="string">"11"</span> <span class="attr">maxlength</span>=<span class="string">"11"</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">div</span>&gt;</span><span class="tag">&lt;<span class="name">input</span> <span class="attr">type</span>=<span class="string">"submit"</span> <span class="attr">value</span>=<span class="string">"注册"</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">form</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h2 id="angular表单"><a href="#angular表单" class="headerlink" title="angular表单"></a>angular表单</h2><p>angular表单相关概念</p>
+<ul>
+<li><p>angular具有两种表单：模板式表单和响应式表单<br>模板式表单：通过模板相关指令定义，应用于简单场景。<br>响应式表单：先通过TypeScript代码定义底层数据模型，再使用特定指令将HTML元素和这个底层模型连接起来。应用于复杂场景。</p>
+</li>
+<li><p>angular表单由数据模型来存储表单的数据。<br>在模板式表单中，数据模型由angular基于组件模板的指令隐式创建<br>在响应式表单中，数据模型由编码创建</p>
+</li>
+<li><p>数据模型由angular/forms模块中的一些特定的类组成，如FormControl、FormGroup、FormArray等组成。在模板式表单中不能直接访问到这些类</p>
+</li>
+<li><p>响应式表单不会替你生成HTML，模板需要自己编写。</p>
+</li>
+<li><p>使用模板式表单需要引入HttpModule；使用响应式表单需要引入ReactiveFormsModule</p>
+</li>
+</ul>
+<h2 id="模板式表单"><a href="#模板式表单" class="headerlink" title="模板式表单"></a>模板式表单</h2><p>ngForm：代表整个form表单。<br>ngForm会创建FromGroup实例<br>ngForm可以使用在div上<br>ngForm会拦截html表单的提交事件，阻止表单的自动提交并用ngSubmit事件来提交事件<br>angular会自动的在form标签上挂一个ngForm指令。如果想禁用ngForm接管表单，需要在form标签中指定ngNoForm属性<br>ngForm将接管form表单的行为导致原表单的提交行为失效<br>ngForm会自动扫描所有带有ngModel属性的字段</p>
+<p>ngModel：标记html元素为表单元素的一部分。一个ngModel代表一个表单字段，<br>ngModel会隐式创建一个FromControl实例来代表字段数据模型并存储字段值<br>在ngForm下使用ngModel不需要使用中括号“[ ]”或小括号“( )”，不过需要为所在标签指定name属性。这个name属性指定了标签值的key</p>
+<p>ngModelGroup：表单的一部分，可以使表单划分出层级关系。<br>ngModelGroup会创建FromGroup实例<br>ngModelGroup=”passwordGroup”指定组名</p>
+<p>使用模板本地变量绑定ngForm、ngModel、ngModelGroup后，使用模板本地变量.value可以获取到表单的值<br>实战：创建一个注册模板式表单，打印出表单的输入值，当点击提交按钮使，在控制台打印出表单的值</p>
+<ul>
+<li><p>模板代码</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">form</span> #<span class="attr">regForm</span>=<span class="string">"ngForm"</span> (<span class="attr">ngSubmit</span>)=<span class="string">"formSubmit($event)"</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">div</span>&gt;</span>账号：<span class="tag">&lt;<span class="name">input</span> #<span class="attr">userName</span> <span class="attr">type</span>=<span class="string">"text"</span> <span class="attr">ngModel</span> <span class="attr">name</span>=<span class="string">"userName"</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">div</span>&gt;</span>电话：<span class="tag">&lt;<span class="name">input</span> #<span class="attr">telphone</span> <span class="attr">type</span>=<span class="string">"number"</span> <span class="attr">ngModel</span> <span class="attr">name</span>=<span class="string">"telphone"</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">div</span>&gt;</span>邮箱：<span class="tag">&lt;<span class="name">input</span> #<span class="attr">email</span> <span class="attr">type</span>=<span class="string">"email"</span> <span class="attr">ngModel</span> <span class="attr">name</span>=<span class="string">"email"</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">div</span> #<span class="attr">passwordGroup</span>=<span class="string">"ngModelGroup"</span> <span class="attr">ngModelGroup</span>=<span class="string">"passwordGroup"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">div</span>&gt;</span>密码：<span class="tag">&lt;<span class="name">input</span> #<span class="attr">password</span> <span class="attr">type</span>=<span class="string">"password"</span> <span class="attr">ngModel</span> <span class="attr">name</span>=<span class="string">"password"</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">div</span>&gt;</span>确认密码<span class="tag">&lt;<span class="name">input</span> #<span class="attr">password1</span> <span class="attr">type</span>=<span class="string">"password"</span> <span class="attr">ngModel</span> <span class="attr">name</span>=<span class="string">"password1"</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">div</span>&gt;</span><span class="tag">&lt;<span class="name">input</span> <span class="attr">type</span>=<span class="string">"submit"</span> <span class="attr">value</span>=<span class="string">"注册"</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">form</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">p</span>&gt;</span>表单值：&#123;&#123;regForm.value | json&#125;&#125;<span class="tag">&lt;/<span class="name">p</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">p</span>&gt;</span>账号：&#123;&#123;userName.value | json&#125;&#125;<span class="tag">&lt;/<span class="name">p</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">p</span>&gt;</span>电话：&#123;&#123;telphone.value | json&#125;&#125;<span class="tag">&lt;/<span class="name">p</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">p</span>&gt;</span>邮箱：&#123;&#123;email.value | json&#125;&#125;<span class="tag">&lt;/<span class="name">p</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">p</span>&gt;</span>密码：&#123;&#123;password.value | json&#125;&#125;<span class="tag">&lt;/<span class="name">p</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">p</span>&gt;</span>确认密码：&#123;&#123;password1.value | json&#125;&#125;<span class="tag">&lt;/<span class="name">p</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">p</span>&gt;</span>密码组：&#123;&#123;passwordGroup.value| json&#125;&#125;<span class="tag">&lt;/<span class="name">p</span>&gt;</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>控制器代码</p>
+<figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">formSubmit(event: <span class="built_in">any</span>) &#123;</span><br><span class="line">  <span class="built_in">console</span>.log(event);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h2 id="响应式表单"><a href="#响应式表单" class="headerlink" title="响应式表单"></a>响应式表单</h2><ol>
+<li>编码创建数据模型<br>FormControl<br>构成表单的基本单元。<br>通常用来表示一个input元素，也可以表示更复杂的元素，如日历，下拉选择框<br>保存者元素当前的值、校验状态和元素是否修改过等。<br>FormControl的构造函数参数为指定初始值</li>
+</ol>
+<p>FormGroup<br>FormControl的集合<br>formModel:FormGroup=new FormGroup({<br>from:new FormGroup,<br>to:new FormGroup})</p>
+<p>FormArray<br>FormControl的集合<br>emails:FormArray=new FormArray({<br>​    new FormControl(),<br>​    new FromControl()<br>})</p>
+<p>响应式表单需要用到的指令<br>响应式表单使用与模板式表单完全不同的指令。这些指令全部来自于ReactiveFormsModule模块中。<br>| 类名 | 指令（使用属性绑定） | 指令（使用属性名） |<br>|——|——|——|<br>| FormGroup | formGroup | formGroupName |<br>| FormControl | fromControl | formControlName |<br>| FormArray | 无法使用属性绑定 |formArrayName |</p>
+<p>响应式表单的指令不可被引用，不能被模板本地变量引用。做到了控制器和模板的隔离<br>使用响应式表单时，我们需要考虑的只有formGroup和3Name<br>类型为formGroup的变量是控制器的属性，故用属性绑定语法。<br>3Name为formGroup下的字符串，不使用属性绑定</p>
+<ul>
+<li>formGroup<br>使用一个绑定form标签的fromGroup代表整个表单<from [fromgroup]="formGroup">
+
+</from></li>
+</ul>
+<p>formGroupName<br>绑定formGroup下的formGroup<br>formGroupName=”dateRange”</p>
+<p>formControlName=”from”<br>绑定formGroup下的formControl<br>必须用在formGroup的范围之内</p>
+<p>formArray<br>绑定formGroup下的formArray<br>*ngFor=”let e of this.formModel.get(‘emails’).controls; let i=index;”<br>formControlName=”i”</p>
+<p>addEmail(){<br>​    let emails=this.formModel.get(‘emails’) as FormArray;<br>​    emails.push(new FormArray());<br>}</p>
+<p>formControl不能用在formGroup的内部<br>[fromControl]=””</p>
+<p>formbuilder<br>formBuilder简化了响应式表单中模型定义语法<br>注入fb：FormBuilder<br>“ fb.array ” 代替 “new FormGroup”<br>“ fb.array ” 代替 “new FormArray”<br>“ fb.control ” 代替 “new FormControler”<br>“ [‘ ‘] ”替代formGroup下的“new FormControler”</p>
+<p>fb.array可以传入额外的参数检验formGroup<br>[‘ ‘]参数：[‘初始值’，检验方式，’异步校验方法]</p>
+]]></content>
+      <categories>
+        <category>Angular</category>
+      </categories>
+      <tags>
+        <tag>编程学习</tag>
+        <tag>Angular</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Angular系列五：路由守卫</title>
+    <url>/2020/03/02/Angular/3.5%E8%B7%AF%E7%94%B1%E5%AE%88%E5%8D%AB/</url>
+    <content><![CDATA[<p>##　路由守卫</p>
+<p>拥有权限才进入路由</p>
+<h2 id="常见的路由守卫如下："><a href="#常见的路由守卫如下：" class="headerlink" title="常见的路由守卫如下："></a>常见的路由守卫如下：</h2><ul>
+<li>CanActivate：进入路由前促发，当条件不满足时，无法进入该路由</li>
+<li>CanDeactivate：从当前路由离开时促发，当条件不满足时，无法离开路由</li>
+<li>Resolve：在路由激活之前获取路由数据</li>
+</ul>
+<p>CanActivate<br>CanActivate的值为一个数组，数组中可以添加多个路由守卫，只有当所有的路由守卫都通过时，才可以进入路由。</p>
+<p>CanDeactivate<br>CanActivate的值为一个数组，数组中可以添加多个路由守卫，只有当所有的路由守卫都通过时，才可以促发导航。</p>
+<p>Resolve<br>Resolve会在进入路由前促发，负责加载信息，当信息加载后再进入路由。如果加载不到想要的信息时，可以根据要求进行处理，如发出提示，或跳转其他路由。Resolve传递的值是一个对象，对象的属性为需要传递的参数，属性值为自定义的Resolve路由守卫。</p>
+<h2 id="自定义CanActivate路由守卫login-guard-ts"><a href="#自定义CanActivate路由守卫login-guard-ts" class="headerlink" title="自定义CanActivate路由守卫login.guard.ts"></a>自定义CanActivate路由守卫login.guard.ts</h2><p>1.新建继承CanActivate接口的LoginGuard类，实现canActivate()方法。<br>2.在canActivate()方法中编写逻辑，当canActivate()方法返回为true时，允许进入路由，反之，当canActivate()方法返回为false时，不允许进入路由。</p>
+<figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="keyword">class</span> LoginGuard <span class="keyword">implements</span> CanActivate &#123;</span><br><span class="line"></span><br><span class="line">  canActivate(): <span class="built_in">boolean</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">Math</span>.random() &gt; <span class="number">0.5</span>) &#123;</span><br><span class="line">      <span class="built_in">console</span>.log(<span class="string">'用户已成功，正在导航'</span>);</span><br><span class="line">      <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="built_in">console</span>.log(<span class="string">'用户未登录'</span>);</span><br><span class="line">      <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="自定义CanDeactivate路由守卫unsave-guard-ts"><a href="#自定义CanDeactivate路由守卫unsave-guard-ts" class="headerlink" title="自定义CanDeactivate路由守卫unsave.guard.ts"></a>自定义CanDeactivate路由守卫unsave.guard.ts</h2><p>1.新建继承CanDeactivate接口的UnSaveGuard类，实现canDeactivate()方法。CanDeactivate接口中需要指定一个泛型，该泛型为路由守卫保护的路由组件类型。<br>2.在canDeactivate()方法中编写逻辑，当canDeactivate()方法返回为true时，允许离开路由，反之，当canDeactivate()方法返回为false时，不允许离开路由。<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="keyword">class</span> UnSaveGuard <span class="keyword">implements</span> CanDeactivate&lt;ProductComponent&gt; &#123;</span><br><span class="line"></span><br><span class="line">  canDeactivate(component: ProductComponent): <span class="built_in">boolean</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">window</span>.confirm(<span class="string">'内容还未保存，确定离开吗？'</span>);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="自定义Resolve路由守卫product-resolve-ts"><a href="#自定义Resolve路由守卫product-resolve-ts" class="headerlink" title="自定义Resolve路由守卫product.resolve.ts"></a>自定义Resolve路由守卫product.resolve.ts</h2><p>1.新建继承Resolve接口的ProductResolve类，实现resolve()方法。Resolve接口中需要指定一个泛型，该泛型为路由守卫保护的路由组件类型。<br>2.在resolve()方法中编写逻辑，加载数据返回或跳转等其他操作。<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Injectable</span>()</span><br><span class="line"><span class="keyword">export</span> <span class="keyword">class</span> ProductResolve <span class="keyword">implements</span> Resolve&lt;Product&gt; &#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">constructor</span>(<span class="params"><span class="keyword">private</span> router: Router</span>) &#123;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  resolve(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable&lt;Product&gt; | <span class="built_in">Promise</span>&lt;Product&gt; | Product &#123;</span><br><span class="line">    <span class="keyword">const</span> id = route.params[<span class="string">'id'</span>];</span><br><span class="line">    <span class="keyword">if</span> (id === <span class="number">1</span>) &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">new</span> Product(<span class="number">1</span>, <span class="string">'apple'</span>);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">this</span>.router.navigate([<span class="string">'/home'</span>]);</span><br><span class="line">      <span class="keyword">return</span> <span class="literal">undefined</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="使用路由守卫"><a href="#使用路由守卫" class="headerlink" title="使用路由守卫"></a>使用路由守卫</h2><p>1.在路由模块中为路由守卫提供注册器<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">providers: [LoginGuard, UnSaveGuard]</span><br></pre></td></tr></table></figure></p>
+<p>2.在对应的路由上使用路由守卫<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">&#123;path: <span class="string">'chat'</span>, component: ChatComponent,  canActivate: [LoginGuard], canDeactivate: [UnSaveGuard]&#125;</span><br><span class="line">&#123;path: <span class="string">'chat'</span>, component: ChatComponent,  canActivate: [canActivate路由守卫], canDeactivate: [canDeactivate路由守卫]&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="使用Resolve路由守卫"><a href="#使用Resolve路由守卫" class="headerlink" title="使用Resolve路由守卫"></a>使用Resolve路由守卫</h2><p>1.在路由模块中为路由守卫提供注册器<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">providers: [ProductResolve]</span><br></pre></td></tr></table></figure></p>
+<p>2.在对应的路由上使用路由守卫<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">&#123;path: <span class="string">'product/:id'</span>, component: ProductComponent, resolve: &#123;</span><br><span class="line">      product: ProductResolve</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#123;path: <span class="string">'product/:id'</span>, component: ProductComponent, resolve: &#123;</span><br><span class="line">      传递的参数名: 传递数值来源,其实就是自定义的Resolve路由守卫</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>3.接受resolve路由守卫中传递的值<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">this</span>.routeInfo.data.subscribe(<span class="function">(<span class="params">data: &#123; product: Product &#125;</span>) =&gt;</span> &#123;</span><br><span class="line">      <span class="keyword">this</span>.productId = data.product.id;</span><br><span class="line">      <span class="keyword">this</span>.productName = data.product.name;</span><br><span class="line">    &#125;);</span><br></pre></td></tr></table></figure></p>
+]]></content>
+      <categories>
+        <category>Angular</category>
+      </categories>
+      <tags>
+        <tag>编程学习</tag>
+        <tag>Angular</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Angular系列一：Angular程序架构</title>
+    <url>/2020/03/02/Angular/1.0Angular%E7%A8%8B%E5%BA%8F%E6%9E%B6%E6%9E%84/</url>
+    <content><![CDATA[<h2 id="Angular程序架构"><a href="#Angular程序架构" class="headerlink" title="Angular程序架构"></a>Angular程序架构</h2><h2 id="Angular程序架构-1"><a href="#Angular程序架构-1" class="headerlink" title="Angular程序架构"></a>Angular程序架构</h2><p>组件：一段带有业务逻辑和数据的Html<br>服务：用来封装可重用的业务逻辑<br>指令：允许你向Html元素添加自定义行为<br>模块：</p>
+<h2 id="环境搭建"><a href="#环境搭建" class="headerlink" title="环境搭建"></a>环境搭建</h2><ul>
+<li><p>安装nodeJs<br>安装好nodeJs后，在cmd中我们将可以使用npm（nodeJs 的包管理工具 ）<br>  查看nodeJs版本</p>
+  <figure class="highlight cmd"><table><tr><td class="code"><pre><span class="line">npm -v</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>安装angular cli命令行工具</p>
+  <figure class="highlight cmd"><table><tr><td class="code"><pre><span class="line">npm install -g @angular/cli</span><br></pre></td></tr></table></figure>
+<p>  查看angular cli 版本</p>
+  <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ng -v</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>创建auction项目</p>
+  <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ng new auction</span><br><span class="line">ng new 项目名</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h2 id="项目目录结构解析"><a href="#项目目录结构解析" class="headerlink" title="项目目录结构解析"></a>项目目录结构解析</h2><ul>
+<li><p>项目根目录<br>| 结构 | 描述 |<br>| —— |—— |<br>|e2e |端到端的测试目录  用来做自动测试的 |<br>|node_modules |第三方依赖包存放目录 |<br>|src|应用源代码目录  |<br>|.angular-cli.json |Angular命令行工具的配置文件。后期可能会去修改它，引一些其他的第三方的包  比如jquery等 |<br>|karma.conf.js |karma是单元测试的执行器，karma.conf.js是karma的配置文件  |<br>|package.json |这是一个标准的npm工具的配置文件，这个文件里面列出了该应用程序所使用的第三方依赖包。实际上我们在新建项目的时候，等了半天就是在下载第三方依赖包。下载完成后会放在node_modules这个目录中，后期我们可能会修改这个文件。|<br>|protractor.conf.js|  也是一个做自动化测试的配置文件 |<br>|README.md | 说明文件|<br>|tslint.json |是tslint的配置文件，用来定义TypeScript代码质量检查的规则 |</p>
+</li>
+<li><p>src目录<br>| 结构 | 描述 |<br>| —— |—— |<br>| app目录 | 包含应用的组件和模块，我们要写的代码都在这个目录 |<br>| assets目录 | 资源目录，存储静态资源的  比如图片 |<br>|environments目录 | 环境配置。Angular是支持多环境开发的，我们可以在不同的环境下（开发环境，测试环境，生产环境）共用一套代码，主要用来配置环境的 |<br>|index.html | 整个应用的根html，程序启动就是访问这个页面 |<br>| main.ts | 整个项目的入口点，Angular通过这个文件来启动项目 |<br>| polyfills.ts | 主要是用来导入一些必要库，为了让Angular能正常运行在老版本浏览器下 |<br>| styles.css | 主要是放一些全局的样式 |<br>| tsconfig.app.json | TypeScript编译器的配置,添加第三方依赖的时候会修改这个文件 |<br>| tsconfig.spec.json | 不用管 |<br>| test.ts | 也是自动化测试用的 |<br>| typings.d.ts | 不用管 |</p>
+</li>
+</ul>
+<h2 id="angular概念"><a href="#angular概念" class="headerlink" title="angular概念"></a>angular概念</h2><p>Component<br>Component由以下3个部分组成：</p>
+<ul>
+<li>装饰器@Component  组件元数据装饰器（内有元数据）</li>
+<li>模板Template</li>
+<li>控制器Controller 一个普通的typescript类</li>
+</ul>
+<figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span>(&#123;</span><br><span class="line">  selector: <span class="string">'app-root'</span>,</span><br><span class="line">  templateUrl: <span class="string">'./app.component.html'</span>,</span><br><span class="line">  styleUrls: [<span class="string">'./app.component.css'</span>]</span><br><span class="line">&#125;)</span><br><span class="line"><span class="keyword">export</span> <span class="keyword">class</span> AppComponent &#123;</span><br><span class="line">  title = <span class="string">'blog-ui'</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>装饰器元数据<br>| 元数据属性 | 描述 |<br>| —— |—— |<br>| selector |就是css选择器，可以理解为一个html标签，通过该标签可以展示该组件的内容 |<br>| templateUrl | 组件的模板，定义了组件的布局和内容 |<br>| styleUrls | 该模板引用那个css样式 |</p>
+<p>组件相关的概念：<br>1.组件元数据装饰器（@Component）<br>简称组件装饰器，用来告知Angular框架如何处理一个TypeScript类.<br>Component装饰器包含多个属性，这些属性的值叫做元数据，Angular会根据这些元数据的值来渲染组件并执行组件的逻辑</p>
+<p>2.模板（Template）<br>我们可以通过组件自带的模板来定义组件的外观，模板以html的形式存在，告诉Angular如何来渲染组件，一般来说，模板看起来很像html，但是我们可以在模板中使用Angular的数据绑定语法，来呈现控制器中的数据。</p>
+<p>3.控制器（controller）<br>控制器就是一个普通的typescript类，他会被@Component来装饰，控制器会包含组件所有的属性和方法，绝大多数的业务逻辑都是写在控制器里的。控制器通过数据绑定与模板来通讯，模板展现控制器的数据，控制器处理模板上发生的事件。</p>
+<p>装饰器，模板和控制器是组件的必备要素。还有一些可选的元素，比如：</p>
+<ul>
+<li><p>输入属性（@inputs）:是用来接收外部传入的数据的,Angular的程序结构就是一个组件树，输入属性允许在组件树种传递数据 </p>
+</li>
+<li><p>提供器（providers）：这个是用来做依赖注入的 </p>
+</li>
+<li><p>生命周期钩子（LifeCycle Hooks）：一个组件从创建到销毁的过程中会有多个钩子会被触发，类似于Android中的Activity的生命周期 </p>
+</li>
+<li><p>样式表：组件可以关联一些样式表 </p>
+</li>
+<li><p>动画（Animations）： Angular提供了一个动画包来帮助我们方便的创建一些跟组件相关的动画效果，比如淡入淡出等 </p>
+</li>
+<li><p>输出属性（@Outputs）：用来定义一些其他组件可能需要的事件或者用来在组件之间共享数据</p>
+</li>
+</ul>
+<p>模块<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="meta">@NgModule</span>(&#123;</span><br><span class="line">  declarations: [</span><br><span class="line">    AppComponent</span><br><span class="line">  ],</span><br><span class="line">  imports: [</span><br><span class="line">    BrowserModule</span><br><span class="line">  ],</span><br><span class="line">  providers: [],</span><br><span class="line">  bootstrap: [AppComponent]</span><br><span class="line">&#125;)</span><br><span class="line"><span class="keyword">export</span> <span class="keyword">class</span> AppModule &#123; &#125;</span><br></pre></td></tr></table></figure></p>
+<p>@NgModule装饰器元数据<br>| 元数据属性 | 描述 |<br>| —— |—— |<br>| declaration | 声明模块中有什么，只能声明组件、指令、管道 |<br>| imports | 声明该模块所依赖的模块 |<br>| prividers | 声明模块中提供的服务 |<br>| bootstrap | 模块的主组件是什么 |</p>
+]]></content>
+      <categories>
+        <category>Angular</category>
+      </categories>
+      <tags>
+        <tag>编程学习</tag>
+        <tag>Angular</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Angular系列四：在路由时传递数据</title>
+    <url>/2020/03/02/Angular/3.2%E5%9C%A8%E8%B7%AF%E7%94%B1%E6%97%B6%E4%BC%A0%E9%80%92%E6%95%B0%E6%8D%AE/</url>
+    <content><![CDATA[<h1 id="在路由时传递数据"><a href="#在路由时传递数据" class="headerlink" title="在路由时传递数据"></a>在路由时传递数据</h1><h2 id="路由传递数据有以下3种方式："><a href="#路由传递数据有以下3种方式：" class="headerlink" title="路由传递数据有以下3种方式："></a>路由传递数据有以下3种方式：</h2><ol>
+<li><p>在查询参数中传递数据<br>/product?id=1&amp;name=2→ActivatedRoute.queryParams[id]</p>
+</li>
+<li><p>在路由路径中传递数据<br>{path:/product/:id} → /product/1 → ActivatedRoute.params[id]</p>
+</li>
+<li><p>在路由配置中传递数据<br>{path : /product, component: ProductComponent, data: [{isProd:true}] } → ActivatedRoute.data[0][isProd] </p>
+</li>
+</ol>
+<h2 id="实战"><a href="#实战" class="headerlink" title="实战"></a>实战</h2><h3 id="实战：在查询参数中传参"><a href="#实战：在查询参数中传参" class="headerlink" title="实战：在查询参数中传参"></a>实战：在查询参数中传参</h3><p>在app.component.html中传递参数<br><figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">a</span> [<span class="attr">routerLink</span>]=<span class="string">"['/product']"</span> [<span class="attr">queryParams</span>]=<span class="string">"&#123;id:1&#125;"</span>&gt;</span>带参路由<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>在product.component.ts中接受参数<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">productId: <span class="built_in">number</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">constructor</span>(<span class="params"><span class="keyword">private</span> routeInfo: ActivatedRoute</span>) &#123;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">ngOnInit() &#123;</span><br><span class="line">  <span class="keyword">this</span>.productId = <span class="keyword">this</span>.routeInfo.snapshot.queryParams[<span class="string">'id'</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="实战：在路由路径中传递数据"><a href="#实战：在路由路径中传递数据" class="headerlink" title="实战：在路由路径中传递数据"></a>实战：在路由路径中传递数据</h3><p>在app-routing.module.ts中新建带参数路由<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">&#123;path: <span class="string">'product/:id'</span>, component: ProductComponent&#125;</span><br><span class="line">&#123;path: <span class="string">'product/路由变量'</span>, component: ProductComponent&#125;</span><br></pre></td></tr></table></figure></p>
+<p>在app.component.html中传递参数<br><figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">a</span> [<span class="attr">routerLink</span>]=<span class="string">"['/product',1]"</span>&gt;</span>商品详情带参<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> [<span class="attr">routerLink</span>]=<span class="string">"['路由URL',路由变量]"</span>&gt;</span>商品详情带参<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>在product.component.ts中接受参数<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">productId: <span class="built_in">number</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">constructor</span>(<span class="params"><span class="keyword">private</span> routeInfo: ActivatedRoute</span>) &#123;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">ngOnInit() &#123;</span><br><span class="line">  <span class="keyword">this</span>.productId = <span class="keyword">this</span>.routeInfo.snapshot.params[<span class="string">'id'</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="参数快照和参数订阅"><a href="#参数快照和参数订阅" class="headerlink" title="参数快照和参数订阅"></a>参数快照和参数订阅</h2><p>参数快照<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">this</span>.productId = <span class="keyword">this</span>.routeInfo.snapshot.params[<span class="string">'id'</span>];</span><br></pre></td></tr></table></figure></p>
+<p>参数订阅<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">this</span>.routeInfo.params.subscribe(<span class="function">(<span class="params">params: Params</span>) =&gt;</span> <span class="keyword">this</span>.productId = params[<span class="string">'id'</span>]);</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>提示：如果路由会路由自身，必须使用路由订阅。</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>Angular</category>
+      </categories>
+      <tags>
+        <tag>编程学习</tag>
+        <tag>Angular</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Angular系列三：路由</title>
+    <url>/2020/03/02/Angular/3.0%E4%BD%BF%E7%94%A8AngularRoute%E5%AF%BC%E8%88%AA/</url>
+    <content><![CDATA[<h2 id="路由内容介绍"><a href="#路由内容介绍" class="headerlink" title="路由内容介绍"></a>路由内容介绍</h2><h2 id="路由基础"><a href="#路由基础" class="headerlink" title="路由基础"></a>路由基础</h2><p>路由对象<br>| 名称 | 简介 |<br>| —— | —— |<br>| Routes | 路由配置，保存着组件对应的URL，以及组件要展示的RouterOutlet |<br>| RouterOutlet | 在Html中的占位符标签，标记了路由位置的展示位置 |<br>| Router | 通过Router的navigate()和navigaterByUrl()方法实现导航到某个路由组件（控制器中使用） |<br>| RouterLink | 通过RouterLink指定要导航到的路由组件（模板中使用） |<br>| ActivatedRoute | 当前激活的路由对象，保存着路由信息，如路由地址、路由参数 |</p>
+<p>Routes对象存在于模块中，具有以下属性</p>
+<ul>
+<li>path: 浏览器URL</li>
+<li>component:URL对应的地址</li>
+</ul>
+<p>示例：<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> routes: Routes = [</span><br><span class="line">  <span class="comment">// 普通路由</span></span><br><span class="line">  &#123;path: <span class="string">''</span>, component: HomeComponent&#125;,</span><br><span class="line">  <span class="comment">// 普通路由</span></span><br><span class="line">  &#123;path: <span class="string">'product'</span>, component: ProductComponent&#125;,</span><br><span class="line">  <span class="comment">// 路由重定向</span></span><br><span class="line">  &#123;path: <span class="string">'prod'</span>, redirectTo: <span class="string">'/product'</span>, pathMatch: <span class="string">'full'</span>&#125;,</span><br><span class="line">  <span class="comment">// 通配符路由。需要放到路由的最后，当路由不存在时将导航到该路由指定的组件。</span></span><br><span class="line">  &#123;path: <span class="string">'**'</span>, component: Code404Component&#125;</span><br><span class="line">];</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>注意：path不能以 “/“ 开头哦。”/“应该写在routerLink中，详情请见RouterLink对象</p>
+</blockquote>
+<p>RouterOutlet<br>RouterOutlet使用在HTML模板中，用于指定组件在页面上展示的位置。RouterOutlet在哪，路由URL对应的组件就会显示在RouterOutlet标签的下方。<br><figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">router-outlet</span>&gt;</span><span class="tag">&lt;/<span class="name">router-outlet</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>routerLink<br>routerLink使用在模板的标签中，可为一个标签添加导航，常使用于<a>标签中。routerLink的值为数组类型，数组的第一个元素为路由URL，第二个元素为路由传递时携带的参数（可选）<br><figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">a</span> [<span class="attr">routerLink</span>]=<span class="string">"['/']"</span>&gt;</span>主页<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> [<span class="attr">routerLink</span>]=<span class="string">"['/product']"</span>&gt;</span>商品详情<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> [<span class="attr">routerLink</span>]=<span class="string">"['/product']"</span> [<span class="attr">queryParams</span>]=<span class="string">"&#123;id:1&#125;"</span>&gt;</span>带参路由<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br></pre></td></tr></table></figure></a></p>
+<blockquote>
+<p>提示：当路由URL以”/“开头，表示该路由为根路由；以”./“开头，表示该路由为子路由。</p>
+</blockquote>
+<p>Router<br>Router使用在控制器中，用于导航到指定路由。常使用的方法为navigate()和navigaterByUrl()方法。<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">constructor</span>(<span class="params"><span class="keyword">private</span> router: Router</span>) &#123;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">onclick() &#123;</span><br><span class="line">  <span class="keyword">this</span>.router.navigate([<span class="string">'/'</span>]);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>ActivatedRoute</p>
+<p>新建路由<br>路由其实是一个特殊的模块<br>实战：为app模块创建一个名称为app-routing的路由<br>1.在app模块中新建app-routing.module.ts</p>
+<figure class="highlight cmd"><table><tr><td class="code"><pre><span class="line">ng g module app-routing</span><br><span class="line">ng g module 路由名</span><br></pre></td></tr></table></figure>
+<p>2.app-routing.module.ts内容如下</p>
+<figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> routes: Routes = [</span><br><span class="line">  &#123;path: <span class="string">''</span>, component: HomeComponent&#125;,</span><br><span class="line">  &#123;path: <span class="string">'product'</span>, component: ProductComponent&#125;</span><br><span class="line">];</span><br><span class="line"></span><br><span class="line"><span class="meta">@NgModule</span>(&#123;</span><br><span class="line">  imports: [</span><br><span class="line">    RouterModule.forRoot(routes)</span><br><span class="line">  ],</span><br><span class="line">  exports: [RouterModule],</span><br><span class="line">  declarations: []</span><br><span class="line">&#125;)</span><br><span class="line"><span class="keyword">export</span> <span class="keyword">class</span> AppRoutingModule &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>3.在app模块中引入app-routing模块</p>
+<figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="meta">@NgModule</span>(&#123;</span><br><span class="line">  imports: [</span><br><span class="line">    AppRoutingModule</span><br><span class="line">  ]</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+<p>新建带路由的项目<br><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ng new router --routing</span><br><span class="line">ng new 项目名 --routing</span><br></pre></td></tr></table></figure></p>
+<p>–routing 参数的作用：生成一个app-routing.module.ts路由模块并将其添加到项目根模块的依赖模块中。</p>
+<figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> routes:Routes=&#123;</span><br><span class="line">   <span class="comment">//注意path没有/哦 &#123;prth:'',component:HomeComponent&#125;,</span></span><br><span class="line">   &#123;path:<span class="string">'**'</span>,component:Code404Component&#125;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">constructor</span>（private router:Router）&#123;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line">//注意有/哦 根路由 参数是一个数组</span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> [<span class="attr">routeLink</span>]=<span class="string">"['/']"</span>&gt;</span>主页<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line">./子路由</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">route-outlet</span>&gt;</span><span class="tag">&lt;/<span class="name">route-outlet</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h2 id="重定向路由"><a href="#重定向路由" class="headerlink" title="重定向路由"></a>重定向路由</h2><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">&#123;path:<span class="string">''</span>,redirectTo:<span class="string">'/home'</span>,pathMatch:<span class="string">'full'</span>&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="子路由"><a href="#子路由" class="headerlink" title="子路由"></a>子路由</h2><p>路由的父子关系。<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    path: <span class="string">'product/:id'</span>, component: ProductComponent, children: [</span><br><span class="line">      &#123;path: <span class="string">''</span>, component: ProductDescComponent&#125;,</span><br><span class="line">      &#123;path: <span class="string">'seller/:id'</span>, component: SellerInfoComponent&#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line">    path: <span class="string">'product/:id'</span>, component: ProductComponent, children: [</span><br><span class="line">      &#123;子路由一&#125;,</span><br><span class="line">      &#123;子路由二&#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>注意：使用子路由时，需要使用 “./“ 格式。如下<a [routerlink]="['./seller',8]">销售员信息</a></p>
+</blockquote>
+<h2 id="辅助路由"><a href="#辅助路由" class="headerlink" title="辅助路由"></a>辅助路由</h2><p>路由的兄弟关系。可以存在多个辅助路由</p>
+<p>辅助路由的配置<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 普通路由</span></span><br><span class="line">&#123;path: <span class="string">''</span>, component: HomeComponent&#125;,</span><br><span class="line"><span class="comment">// 辅助路由</span></span><br><span class="line">&#123;path: <span class="string">'chat'</span>, component: ChatComponent, outlet: <span class="string">'aux'</span>&#125;</span><br><span class="line">&#123;path: <span class="string">'chat'</span>, component: ChatComponent, outlet: <span class="string">'辅助路由名称'</span>&#125;</span><br></pre></td></tr></table></figure></p>
+<p>辅助路由显示位置<br><figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="comment">&lt;!--主路由--&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">router-outlet</span>&gt;</span><span class="tag">&lt;/<span class="name">router-outlet</span>&gt;</span></span><br><span class="line"><span class="comment">&lt;!--名为aux的辅助路由--&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">router-outlet</span> <span class="attr">name</span>=<span class="string">"aux"</span>&gt;</span><span class="tag">&lt;/<span class="name">router-outlet</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">router-outlet</span> <span class="attr">name</span>=<span class="string">"辅助路由名称"</span>&gt;</span><span class="tag">&lt;/<span class="name">router-outlet</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>辅助路由导航<br><figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">a</span> [<span class="attr">routerLink</span>]=<span class="string">"[&#123;outlets:&#123;aux:'chat'&#125;&#125;]"</span>&gt;</span>开始聊天<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> [<span class="attr">routerLink</span>]=<span class="string">"[&#123;outlets:&#123;aux:null&#125;&#125;]"</span>&gt;</span>结束聊天<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> [<span class="attr">routerLink</span>]=<span class="string">"[&#123;outlets:&#123;辅助路由名称:'辅助路由URL'&#125;&#125;]"</span>&gt;</span>开始聊天<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>注意：辅助路由不带 “/“ 。<br>扩展：一个便签控制两个路由<br><figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">a</span> [<span class="attr">routerLink</span>]=<span class="string">"[&#123;outlets:&#123;primary:'home',aux:'chat'&#125;&#125;]"</span>&gt;</span>开始聊天<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> [<span class="attr">routerLink</span>]=<span class="string">"[&#123;outlets:&#123;primary:'主路由URL',辅助路由名称:'辅助路由URL'&#125;&#125;]"</span>&gt;</span>开始聊天<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>Angular</category>
+      </categories>
+      <tags>
+        <tag>编程学习</tag>
+        <tag>Angular</tag>
+      </tags>
+  </entry>
+</search>
