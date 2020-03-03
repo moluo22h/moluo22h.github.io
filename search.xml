@@ -1,6 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>Docker系列一：Docker环境搭建</title>
+    <url>/2020/03/03/docker/2.0docker%E7%8E%AF%E5%A2%83%E7%9A%84%E5%90%84%E7%A7%8D%E6%90%AD%E5%BB%BA%E6%96%B9%E6%B3%95/</url>
+    <content><![CDATA[<h2 id="在centos上安装docker"><a href="#在centos上安装docker" class="headerlink" title="在centos上安装docker"></a>在centos上安装docker</h2><h2 id="前提条件"><a href="#前提条件" class="headerlink" title="前提条件"></a>前提条件</h2><p>1.移除老版本docker及相关依赖</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ sudo yum remove docker \</span><br><span class="line">                  docker-client \</span><br><span class="line">                  docker-client-latest \</span><br><span class="line">                  docker-common \</span><br><span class="line">                  docker-latest \</span><br><span class="line">                  docker-latest-logrotate \</span><br><span class="line">                  docker-logrotate \</span><br><span class="line">                  docker-engine</span><br></pre></td></tr></table></figure>
+<p>2.安装docker所需要的包</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ sudo yum install -y yum-utils \</span><br><span class="line">  device-mapper-persistent-data \</span><br><span class="line">  lvm2</span><br></pre></td></tr></table></figure>
+<p>3.使用如下命令添加稳定的仓库</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ sudo yum-config-manager \</span><br><span class="line">    --add-repo \</span><br><span class="line">    https://download.docker.com/linux/centos/docker-ce.repo</span><br></pre></td></tr></table></figure>
+<h2 id="步骤"><a href="#步骤" class="headerlink" title="步骤"></a>步骤</h2><p>1.安装最新版本的docker</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ sudo yum install docker-ce docker-ce-cli containerd.io</span><br></pre></td></tr></table></figure>
+<p>2.启动docker</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ sudo systemctl start docker</span><br></pre></td></tr></table></figure>
+<p>3.为了验证docker是否安装成功，我们启动一个hello world的容器，输出如下信息则证明安装成功。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">[root@master2 vagrant]<span class="comment"># docker run hello-world</span></span><br><span class="line"></span><br><span class="line">Hello from Docker!</span><br><span class="line">This message shows that your installation appears to be working correctly.</span><br><span class="line"></span><br><span class="line">To generate this message, Docker took the following steps:</span><br><span class="line"> 1. The Docker client contacted the Docker daemon.</span><br><span class="line"> 2. The Docker daemon pulled the <span class="string">"hello-world"</span> image from the Docker Hub.</span><br><span class="line">    (amd64)</span><br><span class="line"> 3. The Docker daemon created a new container from that image <span class="built_in">which</span> runs the</span><br><span class="line">    executable that produces the output you are currently reading.</span><br><span class="line"> 4. The Docker daemon streamed that output to the Docker client, <span class="built_in">which</span> sent it</span><br><span class="line">    to your terminal.</span><br><span class="line"></span><br><span class="line">To try something more ambitious, you can run an Ubuntu container with:</span><br><span class="line"> $ docker run -it ubuntu bash</span><br><span class="line"></span><br><span class="line">Share images, automate workflows, and more with a free Docker ID:</span><br><span class="line"> https://hub.docker.com/</span><br><span class="line"></span><br><span class="line">For more examples and ideas, visit:</span><br><span class="line"> https://docs.docker.com/get-started/</span><br></pre></td></tr></table></figure>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p><a href="https://docs.docker.com/install/linux/docker-ce/centos/" target="_blank" rel="noopener">docker官方文档</a></p>
+]]></content>
+      <categories>
+        <category>Docker</category>
+      </categories>
+      <tags>
+        <tag>编程学习</tag>
+        <tag>Docker</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Spring Security系列五：实现图像验证码功能</title>
     <url>/2020/03/02/Spring%20Security/%E5%9B%BE%E5%BD%A2%E9%AA%8C%E8%AF%81%E7%A0%81/</url>
     <content><![CDATA[<h2 id="实现图像验证码功能"><a href="#实现图像验证码功能" class="headerlink" title="实现图像验证码功能"></a>实现图像验证码功能</h2><h2 id="开发生成图像验证码接口"><a href="#开发生成图像验证码接口" class="headerlink" title="开发生成图像验证码接口"></a>开发生成图像验证码接口</h2><ol>
@@ -25,23 +50,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Spring Security系列七：认证流程源码级详解</title>
-    <url>/2020/03/02/Spring%20Security/%E8%AE%A4%E8%AF%81%E6%B5%81%E7%A8%8B%E6%BA%90%E7%A0%81%E7%BA%A7%E8%AF%A6%E8%A7%A3/</url>
-    <content><![CDATA[<h2 id="认证处理流程说明"><a href="#认证处理流程说明" class="headerlink" title="认证处理流程说明"></a>认证处理流程说明</h2><p>登录请求<br>SecurityCountexPersistenceFilter类<br>UsernamePasswordAuthenticationFilter<br>Authentication（未认证）<br>AuthenticationManager<br>AuthenticationProvider<br>UserDetailsService<br>UserDetails<br>Authentication（以认证）<br>SecurityContext<br>SecuContextHolder<br>SecuContextPersistenceFilter</p>
-<h2 id="认证结果如何在多个请求中共享"><a href="#认证结果如何在多个请求中共享" class="headerlink" title="认证结果如何在多个请求中共享"></a>认证结果如何在多个请求中共享</h2><p>SecurityCountexPersistenceFilter类<br>请求时检测session，若session中携带SecurityContext，将SecurityContext放到线程里；<br>响应时检查线程，若线程中有SecurityContext，则拿出来放到响应session中；<br>用户认证成功后，认证信息会放到程序的线程中，。<br>通过SecurityContextHolder.getContext().getAuthentication()可以在程序的任意位置获取到当前用户的认证信息。</p>
-<h2 id="获取认证用户信息"><a href="#获取认证用户信息" class="headerlink" title="获取认证用户信息"></a>获取认证用户信息</h2><p>方法一：SecurityContextHolder.getContext().getAuthentication();<br><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@GetMapping</span>(<span class="string">"/me"</span>)</span><br><span class="line"><span class="function"><span class="keyword">public</span> Object <span class="title">getCurrentUser</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> SecurityContextHolder.getContext().getAuthentication();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>方法二：通过Authentication authentication<br><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@GetMapping</span>(<span class="string">"/me"</span>)</span><br><span class="line"><span class="function"><span class="keyword">public</span> Object <span class="title">getCurrentUser</span><span class="params">(Authentication authentication)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> authentication;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>方法三：通过@AuthenticationPrincipal UserDetails user。这获取以上两种方法返回结果中的principal<br><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@GetMapping</span>(<span class="string">"/me"</span>)</span><br><span class="line"><span class="function"><span class="keyword">public</span> Object <span class="title">getCurrentUser</span><span class="params">(@AuthenticationPrincipal UserDetails user)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> user;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-]]></content>
-      <categories>
-        <category>Spring Security</category>
-      </categories>
-      <tags>
-        <tag>Spring Security</tag>
-        <tag>编程学习</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Spring Security系列四：自定义用户认证逻辑</title>
     <url>/2020/03/02/Spring%20Security/%E8%87%AA%E5%AE%9A%E4%B9%89%E7%94%A8%E6%88%B7%E8%AE%A4%E8%AF%81/</url>
     <content><![CDATA[<p>##　自定义用户认证逻辑</p>
@@ -56,6 +64,23 @@
 <blockquote>
 <p>注册时使用passwordEncoder.encode()方法对密码进行加密。</p>
 </blockquote>
+]]></content>
+      <categories>
+        <category>Spring Security</category>
+      </categories>
+      <tags>
+        <tag>Spring Security</tag>
+        <tag>编程学习</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Spring Security系列七：认证流程源码级详解</title>
+    <url>/2020/03/02/Spring%20Security/%E8%AE%A4%E8%AF%81%E6%B5%81%E7%A8%8B%E6%BA%90%E7%A0%81%E7%BA%A7%E8%AF%A6%E8%A7%A3/</url>
+    <content><![CDATA[<h2 id="认证处理流程说明"><a href="#认证处理流程说明" class="headerlink" title="认证处理流程说明"></a>认证处理流程说明</h2><p>登录请求<br>SecurityCountexPersistenceFilter类<br>UsernamePasswordAuthenticationFilter<br>Authentication（未认证）<br>AuthenticationManager<br>AuthenticationProvider<br>UserDetailsService<br>UserDetails<br>Authentication（以认证）<br>SecurityContext<br>SecuContextHolder<br>SecuContextPersistenceFilter</p>
+<h2 id="认证结果如何在多个请求中共享"><a href="#认证结果如何在多个请求中共享" class="headerlink" title="认证结果如何在多个请求中共享"></a>认证结果如何在多个请求中共享</h2><p>SecurityCountexPersistenceFilter类<br>请求时检测session，若session中携带SecurityContext，将SecurityContext放到线程里；<br>响应时检查线程，若线程中有SecurityContext，则拿出来放到响应session中；<br>用户认证成功后，认证信息会放到程序的线程中，。<br>通过SecurityContextHolder.getContext().getAuthentication()可以在程序的任意位置获取到当前用户的认证信息。</p>
+<h2 id="获取认证用户信息"><a href="#获取认证用户信息" class="headerlink" title="获取认证用户信息"></a>获取认证用户信息</h2><p>方法一：SecurityContextHolder.getContext().getAuthentication();<br><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@GetMapping</span>(<span class="string">"/me"</span>)</span><br><span class="line"><span class="function"><span class="keyword">public</span> Object <span class="title">getCurrentUser</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> SecurityContextHolder.getContext().getAuthentication();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>方法二：通过Authentication authentication<br><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@GetMapping</span>(<span class="string">"/me"</span>)</span><br><span class="line"><span class="function"><span class="keyword">public</span> Object <span class="title">getCurrentUser</span><span class="params">(Authentication authentication)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> authentication;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>方法三：通过@AuthenticationPrincipal UserDetails user。这获取以上两种方法返回结果中的principal<br><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@GetMapping</span>(<span class="string">"/me"</span>)</span><br><span class="line"><span class="function"><span class="keyword">public</span> Object <span class="title">getCurrentUser</span><span class="params">(@AuthenticationPrincipal UserDetails user)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> user;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 ]]></content>
       <categories>
         <category>Spring Security</category>
@@ -191,6 +216,26 @@
       </tags>
   </entry>
   <entry>
+    <title>Spring Security系列六：使用Spring Social开发第三方登录</title>
+    <url>/2020/03/02/Spring%20Security/%E4%BD%BF%E7%94%A8Spring%20Social%E5%BC%80%E5%8F%91%E7%AC%AC%E4%B8%89%E6%96%B9%E7%99%BB%E5%BD%95/</url>
+    <content><![CDATA[<h1 id="OAuth协议"><a href="#OAuth协议" class="headerlink" title="OAuth协议"></a>OAuth协议</h1><p>通过token访问数据</p>
+<h2 id="OAuth角色及职责"><a href="#OAuth角色及职责" class="headerlink" title="OAuth角色及职责"></a>OAuth角色及职责</h2><p>provider：服务提供商<br>​    Authorization Server认证服务器<br>​    Resource Server 资源服务器<br>resource owner：资源所有者<br>client：第三方应用</p>
+<h2 id="OAuth协议流程"><a href="#OAuth协议流程" class="headerlink" title="OAuth协议流程"></a>OAuth协议流程</h2><h2 id="四种授权模式"><a href="#四种授权模式" class="headerlink" title="四种授权模式"></a>四种授权模式</h2><p>授权码模式（authorization code）<br>密码模式（resource owner password）<br>客户端模式<br>简化模式</p>
+<h1 id="Spring-Social开发第三方登录"><a href="#Spring-Social开发第三方登录" class="headerlink" title="Spring Social开发第三方登录"></a>Spring Social开发第三方登录</h1><p>Spring Social封装了social Authentication filter过滤器</p>
+<p>ServiceProvider(AbstracOAuth2ServiceProvider)<br>​    OAuth2Operations（OAuth2Template）<br>​    Api（AbstractOAuth2ApiBing）</p>
+<p>获取用户信息<br>Connection（OAuth2Connection）<br>ConnectionFactory（OAuth2ConnectionFactiry）<br>​    ServiceProvider<br>​    ApiAdapter<br>UserConnectionRepository（JdvcUsersConnectionRepository）<br>DB UserConnection</p>
+<p>新建类继承AbstractOAuth2ApiBing<br>accessToken访问的令牌<br>restTemplate发信息<br><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String URL_GET_OPENID=<span class="string">"https://https://graph.qq.com/oauth2.0/me?access_token=%s"</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String URL_GET_USERINFO=<span class="string">"https://graph.qq.com/user/get_user_info?access_token=%s&amp;oauth_consumer_key=%s&amp;openid=%s"</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> String appId</span><br><span class="line"><span class="keyword">private</span> String openId</span><br><span class="line"><span class="keyword">private</span> ObjectMapper objectMapper=<span class="keyword">new</span> ObjectMapper():</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">QQImpl</span><span class="params">(String accessToken,String appId)</span></span>&#123;</span><br><span class="line">    <span class="keyword">super</span>(accessToken,TokenStrategy.ACCESS_TOKEN_PARAMETER);</span><br><span class="line">    <span class="keyword">this</span>.appId=appId;</span><br><span class="line">    String url=String.format(URL_GET_OPENID,accessToken)</span><br><span class="line">    String result=getRestTemplate().getForObject(url,responseType);</span><br><span class="line">    <span class="keyword">this</span>.openId=StringUtils.SubstringBetween(result,<span class="string">"\"openid\":"</span>,<span class="string">"&#125;"</span>)；</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">getUerInfo()&#123;</span><br><span class="line">    String url=String.format(URL_GET_USERINFO,appId,openId);</span><br><span class="line">    String result=getRestTemplate().getForObject(url,String<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">    <span class="keyword">return</span> objectMapper.readValue(result,QQMessage<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class">    </span></span><br><span class="line"><span class="class">&#125;</span></span><br></pre></td></tr></table></figure></p>
+<p>新建QQServiceProvider 继承AbstracOAuth2ServiceProvider<qq><br><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">private</span> String appId；</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> Static <span class="keyword">final</span> String URL_AUTHORIZE=<span class="string">""</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String UTL_ACCESS_TOKEN=<span class="string">""</span></span><br><span class="line"></span><br><span class="line">publice(String appId，String appSecret)&#123;</span><br><span class="line">    <span class="keyword">super</span>(<span class="keyword">new</span> OAuth2Template(clientId,clientSecret,authorizeUrl,accessTokenUrl))</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> QQ <span class="title">getApi</span><span class="params">(String accessToken)</span></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> QQImpl(accessToken,appId);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></qq></p>
+]]></content>
+      <categories>
+        <category>Spring Security</category>
+      </categories>
+      <tags>
+        <tag>Spring Security</tag>
+        <tag>编程学习</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Spring Security系列三：个性化用户认证流程</title>
     <url>/2020/03/02/Spring%20Security/%E4%B8%AA%E6%80%A7%E5%8C%96%E7%94%A8%E6%88%B7%E8%AE%A4%E8%AF%81%E6%B5%81%E7%A8%8B/</url>
     <content><![CDATA[<h2 id="个性化用户认证流程"><a href="#个性化用户认证流程" class="headerlink" title="个性化用户认证流程"></a>个性化用户认证流程</h2><h2 id="自定义登录页面"><a href="#自定义登录页面" class="headerlink" title="自定义登录页面"></a>自定义登录页面</h2><ol>
@@ -221,26 +266,6 @@
 <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">configure</span><span class="params">(HttpSecurity http)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">      http.formLogin()</span><br><span class="line">              .loginPage(<span class="string">"/authentication/request"</span>)</span><br><span class="line">              .loginProcessingUrl(<span class="string">"/authentication/form"</span>)</span><br><span class="line">              .successHandler(blogAuthenticationSuccessHandler)</span><br><span class="line">              .failureHandler(blogAuthenticationFailureHandler)</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
 </li>
 </ol>
-]]></content>
-      <categories>
-        <category>Spring Security</category>
-      </categories>
-      <tags>
-        <tag>Spring Security</tag>
-        <tag>编程学习</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Spring Security系列六：使用Spring Social开发第三方登录</title>
-    <url>/2020/03/02/Spring%20Security/%E4%BD%BF%E7%94%A8Spring%20Social%E5%BC%80%E5%8F%91%E7%AC%AC%E4%B8%89%E6%96%B9%E7%99%BB%E5%BD%95/</url>
-    <content><![CDATA[<h1 id="OAuth协议"><a href="#OAuth协议" class="headerlink" title="OAuth协议"></a>OAuth协议</h1><p>通过token访问数据</p>
-<h2 id="OAuth角色及职责"><a href="#OAuth角色及职责" class="headerlink" title="OAuth角色及职责"></a>OAuth角色及职责</h2><p>provider：服务提供商<br>​    Authorization Server认证服务器<br>​    Resource Server 资源服务器<br>resource owner：资源所有者<br>client：第三方应用</p>
-<h2 id="OAuth协议流程"><a href="#OAuth协议流程" class="headerlink" title="OAuth协议流程"></a>OAuth协议流程</h2><h2 id="四种授权模式"><a href="#四种授权模式" class="headerlink" title="四种授权模式"></a>四种授权模式</h2><p>授权码模式（authorization code）<br>密码模式（resource owner password）<br>客户端模式<br>简化模式</p>
-<h1 id="Spring-Social开发第三方登录"><a href="#Spring-Social开发第三方登录" class="headerlink" title="Spring Social开发第三方登录"></a>Spring Social开发第三方登录</h1><p>Spring Social封装了social Authentication filter过滤器</p>
-<p>ServiceProvider(AbstracOAuth2ServiceProvider)<br>​    OAuth2Operations（OAuth2Template）<br>​    Api（AbstractOAuth2ApiBing）</p>
-<p>获取用户信息<br>Connection（OAuth2Connection）<br>ConnectionFactory（OAuth2ConnectionFactiry）<br>​    ServiceProvider<br>​    ApiAdapter<br>UserConnectionRepository（JdvcUsersConnectionRepository）<br>DB UserConnection</p>
-<p>新建类继承AbstractOAuth2ApiBing<br>accessToken访问的令牌<br>restTemplate发信息<br><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String URL_GET_OPENID=<span class="string">"https://https://graph.qq.com/oauth2.0/me?access_token=%s"</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String URL_GET_USERINFO=<span class="string">"https://graph.qq.com/user/get_user_info?access_token=%s&amp;oauth_consumer_key=%s&amp;openid=%s"</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> String appId</span><br><span class="line"><span class="keyword">private</span> String openId</span><br><span class="line"><span class="keyword">private</span> ObjectMapper objectMapper=<span class="keyword">new</span> ObjectMapper():</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">QQImpl</span><span class="params">(String accessToken,String appId)</span></span>&#123;</span><br><span class="line">    <span class="keyword">super</span>(accessToken,TokenStrategy.ACCESS_TOKEN_PARAMETER);</span><br><span class="line">    <span class="keyword">this</span>.appId=appId;</span><br><span class="line">    String url=String.format(URL_GET_OPENID,accessToken)</span><br><span class="line">    String result=getRestTemplate().getForObject(url,responseType);</span><br><span class="line">    <span class="keyword">this</span>.openId=StringUtils.SubstringBetween(result,<span class="string">"\"openid\":"</span>,<span class="string">"&#125;"</span>)；</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">getUerInfo()&#123;</span><br><span class="line">    String url=String.format(URL_GET_USERINFO,appId,openId);</span><br><span class="line">    String result=getRestTemplate().getForObject(url,String<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">    <span class="keyword">return</span> objectMapper.readValue(result,QQMessage<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class">    </span></span><br><span class="line"><span class="class">&#125;</span></span><br></pre></td></tr></table></figure></p>
-<p>新建QQServiceProvider 继承AbstracOAuth2ServiceProvider<qq><br><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">private</span> String appId；</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> Static <span class="keyword">final</span> String URL_AUTHORIZE=<span class="string">""</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String UTL_ACCESS_TOKEN=<span class="string">""</span></span><br><span class="line"></span><br><span class="line">publice(String appId，String appSecret)&#123;</span><br><span class="line">    <span class="keyword">super</span>(<span class="keyword">new</span> OAuth2Template(clientId,clientSecret,authorizeUrl,accessTokenUrl))</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> QQ <span class="title">getApi</span><span class="params">(String accessToken)</span></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> QQImpl(accessToken,appId);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></qq></p>
 ]]></content>
       <categories>
         <category>Spring Security</category>
@@ -667,62 +692,31 @@
       </tags>
   </entry>
   <entry>
-    <title>Deployment</title>
-    <url>/2020/03/02/Kubernetes/5.Deployment/</url>
-    <content><![CDATA[<h2 id="Deployment"><a href="#Deployment" class="headerlink" title="Deployment"></a>Deployment</h2><p>Deployment 描述了一种希望pod（如pod数、pod镜像版本）的状态，Deployment将努力现实这种状态。</p>
-<h2 id="创建"><a href="#创建" class="headerlink" title="创建"></a>创建</h2><p>kubectl create -f {deployment yaml file}</p>
-<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">apps/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">nginx-deployment</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">nginx</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">replicas:</span> <span class="number">3</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">matchLabels:</span></span><br><span class="line">      <span class="attr">app:</span> <span class="string">nginx</span></span><br><span class="line">  <span class="attr">template:</span></span><br><span class="line">    <span class="attr">metadata:</span></span><br><span class="line">      <span class="attr">labels:</span></span><br><span class="line">        <span class="attr">app:</span> <span class="string">nginx</span></span><br><span class="line">    <span class="attr">spec:</span></span><br><span class="line">      <span class="attr">containers:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nginx</span></span><br><span class="line">        <span class="attr">image:</span> <span class="string">nginx:1.12.2</span></span><br><span class="line">        <span class="attr">ports:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">containerPort:</span> <span class="number">80</span></span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>deployment 会自动创建replicaset和pod。replicaset的名称为deployment名称+随机数，pods的名称为replicaset名称+随机数。<br>rs列表查看：kubectl get rs<br>pod列表查看：kubectl get pods</p>
-</blockquote>
-<p>查看deployment：kubectl get deplolyment</p>
-<p>查看deployment更多信息（selector，container）：kubectl get deployment -o wide</p>
-<p>升级pod image： kubectl set image deployment {deployment name} nginx=nginx：1.13</p>
-<p>查看deployment升级历史：kubectl rollout history deployment {deployment name}</p>
-<p>回滚deployment版本：kubectl undo deployment {deployment name}</p>
-<h2 id="暴露端口到节点上："><a href="#暴露端口到节点上：" class="headerlink" title="暴露端口到节点上："></a>暴露端口到节点上：</h2><p>1.查看节点ip：kubectl get nede -o wide，<br>2.暴露端口kubectl expode deployment {deployment name} –type=NodePort，<br>3.查看暴露端口的映射：kubectl get svc</p>
-<p>扩展:删除service: kubectl delete services {services name} </p>
-]]></content>
-      <categories>
-        <category>kubernetes</category>
-      </categories>
-      <tags>
-        <tag>编程学习</tag>
-        <tag>Kubernetes</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>pod介绍</title>
-    <url>/2020/03/02/Kubernetes/3.pod%E4%BB%8B%E7%BB%8D/</url>
-    <content><![CDATA[<h2 id="pod介绍"><a href="#pod介绍" class="headerlink" title="pod介绍"></a>pod介绍</h2><p>pod是k8s的最小调度单位，一个pod中可以包含一个或多个container，pod中的container共享同一个namespace，即不同的container可以通过localhost相互访问</p>
-<h2 id="创建pod"><a href="#创建pod" class="headerlink" title="创建pod"></a>创建pod</h2><p>kubectl create -f {pod yaml file}</p>
-<blockquote>
-<p>注意：一般不要采用该方法创建pod，建议选用Deployment、replicaset或replicationController</p>
-</blockquote>
-<p>pod_nginx.yml</p>
-<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">nginx</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">nginx</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">containers:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nginx</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">nginx</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">containerPort:</span> <span class="number">80</span></span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>yml文件解析</p>
+    <title>Kubernetes集群搭建</title>
+    <url>/2020/03/02/Kubernetes/2.Kubernetes%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/</url>
+    <content><![CDATA[<h2 id="Kubernetes集群搭建"><a href="#Kubernetes集群搭建" class="headerlink" title="Kubernetes集群搭建"></a>Kubernetes集群搭建</h2><p>kelsey Hightower：kubernetes首席布道师</p>
+<h2 id="Kubernetes集群搭建方式"><a href="#Kubernetes集群搭建方式" class="headerlink" title="Kubernetes集群搭建方式"></a>Kubernetes集群搭建方式</h2><ul>
+<li>minikube搭建单节点集群</li>
+<li>kubeadm搭建多节点集群</li>
+<li>kops 在cloud上搭建集群</li>
+<li>Tectonic搭建集群</li>
+<li>Play with kubernetes</li>
+</ul>
+<h2 id="minikube搭建单节点集群"><a href="#minikube搭建单节点集群" class="headerlink" title="minikube搭建单节点集群"></a>minikube搭建单节点集群</h2><p>1.安装kubectl<br>2.下载安装minikube<br>3.安装虚拟工具<br>4.minikube start（若已经在虚机中，可使用minikube start –vm-driver=none将集群安装在本机）</p>
+<p>扩展：<br>kubectl context：基本的配置信息（api地址、serve地址端口、认证信息）</p>
 <ul>
-<li>kind：指定资源类型（pod）</li>
-<li>metadata：pod的metadata。如名字name，标签labels</li>
-<li>spec：pod中最关键的部分-容器（容器名字name、容器镜像image、容器暴露端口containerPort）</li>
+<li>查看基本信息：kubectl config view</li>
+<li>查看context：kubectl get-context（通过不同的context可以进入不同的kubernetes集群）</li>
+<li>查看集群信息：kubectl cluster-info</li>
+<li>进入虚机minikube ssh</li>
 </ul>
-</blockquote>
-<p>查看集群健康：kubectl version</p>
-<h2 id="删除pod"><a href="#删除pod" class="headerlink" title="删除pod"></a>删除pod</h2><p>kubectl delete -f pod_nginx.yml</p>
-<h2 id="查看pod"><a href="#查看pod" class="headerlink" title="查看pod"></a>查看pod</h2><ul>
-<li><p>查看pod列表：kubectl get pods</p>
-</li>
-<li><p>显示pod的详细信息（比如容器在哪，容器ip等）：kubectl get pods -o wide</p>
-</li>
-<li>具体表述一个resource(名字，namespace，在哪个节点上，lable，IP地址，container  id，image ，port相关信息)：kebuctl  describe {resource type} {resource name}</li>
+<h2 id="kubeadm搭建多节点集群"><a href="#kubeadm搭建多节点集群" class="headerlink" title="kubeadm搭建多节点集群"></a>kubeadm搭建多节点集群</h2><h2 id="kops-在cloud上搭建集群"><a href="#kops-在cloud上搭建集群" class="headerlink" title="kops 在cloud上搭建集群"></a>kops 在cloud上搭建集群</h2><h2 id="Tectonic搭建集群"><a href="#Tectonic搭建集群" class="headerlink" title="Tectonic搭建集群"></a>Tectonic搭建集群</h2><p>1.下载tectonic sandbox<br>2.vagrant up</p>
+<h2 id="Play-with-kubernetes"><a href="#Play-with-kubernetes" class="headerlink" title="Play with kubernetes"></a>Play with kubernetes</h2><h2 id="扩展"><a href="#扩展" class="headerlink" title="扩展"></a>扩展</h2><p>1.多个class切换</p>
+<p>合并context文件.kube<br>查看context:kubectl config get-contexts<br>切换context:kubectl config use-context {context name}</p>
+<p>2.补全<br>kubectl completion bash<br>source {bash 文件}</p>
+<h2 id="查考文档"><a href="#查考文档" class="headerlink" title="查考文档"></a>查考文档</h2><ul>
+<li><a href="https://www.kubernetes.org.cn/" target="_blank" rel="noopener">kubernetes 中文社区</a></li>
 </ul>
-<h2 id="进入pod中的容器"><a href="#进入pod中的容器" class="headerlink" title="进入pod中的容器"></a>进入pod中的容器</h2><ul>
-<li>方法一：minikube ssh进入节点，docker ps 查看container，通过dockers命令进入到容器中</li>
-<li>方法二：kubectl exec -it {pod name} sh 进入到pod中的容器中，当pod有多个容器时，通过加参数进入第二个容器的命令为kubectl exec -it {pod name} -c {container} sh</li>
-</ul>
-<h2 id="暴露pod服务"><a href="#暴露pod服务" class="headerlink" title="暴露pod服务"></a>暴露pod服务</h2><p>端口映射：kubectl port-forward {podname} {外部端口}：{内部端口}</p>
 ]]></content>
       <categories>
         <category>kubernetes</category>
@@ -757,31 +751,21 @@
       </tags>
   </entry>
   <entry>
-    <title>Kubernetes集群搭建</title>
-    <url>/2020/03/02/Kubernetes/2.Kubernetes%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/</url>
-    <content><![CDATA[<h2 id="Kubernetes集群搭建"><a href="#Kubernetes集群搭建" class="headerlink" title="Kubernetes集群搭建"></a>Kubernetes集群搭建</h2><p>kelsey Hightower：kubernetes首席布道师</p>
-<h2 id="Kubernetes集群搭建方式"><a href="#Kubernetes集群搭建方式" class="headerlink" title="Kubernetes集群搭建方式"></a>Kubernetes集群搭建方式</h2><ul>
-<li>minikube搭建单节点集群</li>
-<li>kubeadm搭建多节点集群</li>
-<li>kops 在cloud上搭建集群</li>
-<li>Tectonic搭建集群</li>
-<li>Play with kubernetes</li>
-</ul>
-<h2 id="minikube搭建单节点集群"><a href="#minikube搭建单节点集群" class="headerlink" title="minikube搭建单节点集群"></a>minikube搭建单节点集群</h2><p>1.安装kubectl<br>2.下载安装minikube<br>3.安装虚拟工具<br>4.minikube start（若已经在虚机中，可使用minikube start –vm-driver=none将集群安装在本机）</p>
-<p>扩展：<br>kubectl context：基本的配置信息（api地址、serve地址端口、认证信息）</p>
-<ul>
-<li>查看基本信息：kubectl config view</li>
-<li>查看context：kubectl get-context（通过不同的context可以进入不同的kubernetes集群）</li>
-<li>查看集群信息：kubectl cluster-info</li>
-<li>进入虚机minikube ssh</li>
-</ul>
-<h2 id="kubeadm搭建多节点集群"><a href="#kubeadm搭建多节点集群" class="headerlink" title="kubeadm搭建多节点集群"></a>kubeadm搭建多节点集群</h2><h2 id="kops-在cloud上搭建集群"><a href="#kops-在cloud上搭建集群" class="headerlink" title="kops 在cloud上搭建集群"></a>kops 在cloud上搭建集群</h2><h2 id="Tectonic搭建集群"><a href="#Tectonic搭建集群" class="headerlink" title="Tectonic搭建集群"></a>Tectonic搭建集群</h2><p>1.下载tectonic sandbox<br>2.vagrant up</p>
-<h2 id="Play-with-kubernetes"><a href="#Play-with-kubernetes" class="headerlink" title="Play with kubernetes"></a>Play with kubernetes</h2><h2 id="扩展"><a href="#扩展" class="headerlink" title="扩展"></a>扩展</h2><p>1.多个class切换</p>
-<p>合并context文件.kube<br>查看context:kubectl config get-contexts<br>切换context:kubectl config use-context {context name}</p>
-<p>2.补全<br>kubectl completion bash<br>source {bash 文件}</p>
-<h2 id="查考文档"><a href="#查考文档" class="headerlink" title="查考文档"></a>查考文档</h2><ul>
-<li><a href="https://www.kubernetes.org.cn/" target="_blank" rel="noopener">kubernetes 中文社区</a></li>
-</ul>
+    <title>Deployment</title>
+    <url>/2020/03/02/Kubernetes/5.Deployment/</url>
+    <content><![CDATA[<h2 id="Deployment"><a href="#Deployment" class="headerlink" title="Deployment"></a>Deployment</h2><p>Deployment 描述了一种希望pod（如pod数、pod镜像版本）的状态，Deployment将努力现实这种状态。</p>
+<h2 id="创建"><a href="#创建" class="headerlink" title="创建"></a>创建</h2><p>kubectl create -f {deployment yaml file}</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">apps/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">nginx-deployment</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">nginx</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">replicas:</span> <span class="number">3</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">matchLabels:</span></span><br><span class="line">      <span class="attr">app:</span> <span class="string">nginx</span></span><br><span class="line">  <span class="attr">template:</span></span><br><span class="line">    <span class="attr">metadata:</span></span><br><span class="line">      <span class="attr">labels:</span></span><br><span class="line">        <span class="attr">app:</span> <span class="string">nginx</span></span><br><span class="line">    <span class="attr">spec:</span></span><br><span class="line">      <span class="attr">containers:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nginx</span></span><br><span class="line">        <span class="attr">image:</span> <span class="string">nginx:1.12.2</span></span><br><span class="line">        <span class="attr">ports:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">containerPort:</span> <span class="number">80</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>deployment 会自动创建replicaset和pod。replicaset的名称为deployment名称+随机数，pods的名称为replicaset名称+随机数。<br>rs列表查看：kubectl get rs<br>pod列表查看：kubectl get pods</p>
+</blockquote>
+<p>查看deployment：kubectl get deplolyment</p>
+<p>查看deployment更多信息（selector，container）：kubectl get deployment -o wide</p>
+<p>升级pod image： kubectl set image deployment {deployment name} nginx=nginx：1.13</p>
+<p>查看deployment升级历史：kubectl rollout history deployment {deployment name}</p>
+<p>回滚deployment版本：kubectl undo deployment {deployment name}</p>
+<h2 id="暴露端口到节点上："><a href="#暴露端口到节点上：" class="headerlink" title="暴露端口到节点上："></a>暴露端口到节点上：</h2><p>1.查看节点ip：kubectl get nede -o wide，<br>2.暴露端口kubectl expode deployment {deployment name} –type=NodePort，<br>3.查看暴露端口的映射：kubectl get svc</p>
+<p>扩展:删除service: kubectl delete services {services name} </p>
 ]]></content>
       <categories>
         <category>kubernetes</category>
@@ -859,6 +843,47 @@
       </tags>
   </entry>
   <entry>
+    <title>pod介绍</title>
+    <url>/2020/03/02/Kubernetes/3.pod%E4%BB%8B%E7%BB%8D/</url>
+    <content><![CDATA[<h2 id="pod介绍"><a href="#pod介绍" class="headerlink" title="pod介绍"></a>pod介绍</h2><p>pod是k8s的最小调度单位，一个pod中可以包含一个或多个container，pod中的container共享同一个namespace，即不同的container可以通过localhost相互访问</p>
+<h2 id="创建pod"><a href="#创建pod" class="headerlink" title="创建pod"></a>创建pod</h2><p>kubectl create -f {pod yaml file}</p>
+<blockquote>
+<p>注意：一般不要采用该方法创建pod，建议选用Deployment、replicaset或replicationController</p>
+</blockquote>
+<p>pod_nginx.yml</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">nginx</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">nginx</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">containers:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nginx</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">nginx</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">containerPort:</span> <span class="number">80</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>yml文件解析</p>
+<ul>
+<li>kind：指定资源类型（pod）</li>
+<li>metadata：pod的metadata。如名字name，标签labels</li>
+<li>spec：pod中最关键的部分-容器（容器名字name、容器镜像image、容器暴露端口containerPort）</li>
+</ul>
+</blockquote>
+<p>查看集群健康：kubectl version</p>
+<h2 id="删除pod"><a href="#删除pod" class="headerlink" title="删除pod"></a>删除pod</h2><p>kubectl delete -f pod_nginx.yml</p>
+<h2 id="查看pod"><a href="#查看pod" class="headerlink" title="查看pod"></a>查看pod</h2><ul>
+<li><p>查看pod列表：kubectl get pods</p>
+</li>
+<li><p>显示pod的详细信息（比如容器在哪，容器ip等）：kubectl get pods -o wide</p>
+</li>
+<li>具体表述一个resource(名字，namespace，在哪个节点上，lable，IP地址，container  id，image ，port相关信息)：kebuctl  describe {resource type} {resource name}</li>
+</ul>
+<h2 id="进入pod中的容器"><a href="#进入pod中的容器" class="headerlink" title="进入pod中的容器"></a>进入pod中的容器</h2><ul>
+<li>方法一：minikube ssh进入节点，docker ps 查看container，通过dockers命令进入到容器中</li>
+<li>方法二：kubectl exec -it {pod name} sh 进入到pod中的容器中，当pod有多个容器时，通过加参数进入第二个容器的命令为kubectl exec -it {pod name} -c {container} sh</li>
+</ul>
+<h2 id="暴露pod服务"><a href="#暴露pod服务" class="headerlink" title="暴露pod服务"></a>暴露pod服务</h2><p>端口映射：kubectl port-forward {podname} {外部端口}：{内部端口}</p>
+]]></content>
+      <categories>
+        <category>kubernetes</category>
+      </categories>
+      <tags>
+        <tag>编程学习</tag>
+        <tag>Kubernetes</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>容器的基本监控</title>
     <url>/2020/03/02/Kubernetes/7.%E5%AE%B9%E5%99%A8%E7%9A%84%E5%9F%BA%E6%9C%AC%E7%9B%91%E6%8E%A7/</url>
     <content><![CDATA[<p>容器中运行的进程：docker top <container id></container></p>
@@ -889,6 +914,37 @@
       <tags>
         <tag>编程学习</tag>
         <tag>Kubernetes</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Angular系列五：路由守卫</title>
+    <url>/2020/03/02/Angular/3.5%E8%B7%AF%E7%94%B1%E5%AE%88%E5%8D%AB/</url>
+    <content><![CDATA[<p>##　路由守卫</p>
+<p>拥有权限才进入路由</p>
+<h2 id="常见的路由守卫如下："><a href="#常见的路由守卫如下：" class="headerlink" title="常见的路由守卫如下："></a>常见的路由守卫如下：</h2><ul>
+<li>CanActivate：进入路由前促发，当条件不满足时，无法进入该路由</li>
+<li>CanDeactivate：从当前路由离开时促发，当条件不满足时，无法离开路由</li>
+<li>Resolve：在路由激活之前获取路由数据</li>
+</ul>
+<p>CanActivate<br>CanActivate的值为一个数组，数组中可以添加多个路由守卫，只有当所有的路由守卫都通过时，才可以进入路由。</p>
+<p>CanDeactivate<br>CanActivate的值为一个数组，数组中可以添加多个路由守卫，只有当所有的路由守卫都通过时，才可以促发导航。</p>
+<p>Resolve<br>Resolve会在进入路由前促发，负责加载信息，当信息加载后再进入路由。如果加载不到想要的信息时，可以根据要求进行处理，如发出提示，或跳转其他路由。Resolve传递的值是一个对象，对象的属性为需要传递的参数，属性值为自定义的Resolve路由守卫。</p>
+<h2 id="自定义CanActivate路由守卫login-guard-ts"><a href="#自定义CanActivate路由守卫login-guard-ts" class="headerlink" title="自定义CanActivate路由守卫login.guard.ts"></a>自定义CanActivate路由守卫login.guard.ts</h2><p>1.新建继承CanActivate接口的LoginGuard类，实现canActivate()方法。<br>2.在canActivate()方法中编写逻辑，当canActivate()方法返回为true时，允许进入路由，反之，当canActivate()方法返回为false时，不允许进入路由。</p>
+<figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="keyword">class</span> LoginGuard <span class="keyword">implements</span> CanActivate &#123;</span><br><span class="line"></span><br><span class="line">  canActivate(): <span class="built_in">boolean</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">Math</span>.random() &gt; <span class="number">0.5</span>) &#123;</span><br><span class="line">      <span class="built_in">console</span>.log(<span class="string">'用户已成功，正在导航'</span>);</span><br><span class="line">      <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="built_in">console</span>.log(<span class="string">'用户未登录'</span>);</span><br><span class="line">      <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="自定义CanDeactivate路由守卫unsave-guard-ts"><a href="#自定义CanDeactivate路由守卫unsave-guard-ts" class="headerlink" title="自定义CanDeactivate路由守卫unsave.guard.ts"></a>自定义CanDeactivate路由守卫unsave.guard.ts</h2><p>1.新建继承CanDeactivate接口的UnSaveGuard类，实现canDeactivate()方法。CanDeactivate接口中需要指定一个泛型，该泛型为路由守卫保护的路由组件类型。<br>2.在canDeactivate()方法中编写逻辑，当canDeactivate()方法返回为true时，允许离开路由，反之，当canDeactivate()方法返回为false时，不允许离开路由。<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="keyword">class</span> UnSaveGuard <span class="keyword">implements</span> CanDeactivate&lt;ProductComponent&gt; &#123;</span><br><span class="line"></span><br><span class="line">  canDeactivate(component: ProductComponent): <span class="built_in">boolean</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">window</span>.confirm(<span class="string">'内容还未保存，确定离开吗？'</span>);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="自定义Resolve路由守卫product-resolve-ts"><a href="#自定义Resolve路由守卫product-resolve-ts" class="headerlink" title="自定义Resolve路由守卫product.resolve.ts"></a>自定义Resolve路由守卫product.resolve.ts</h2><p>1.新建继承Resolve接口的ProductResolve类，实现resolve()方法。Resolve接口中需要指定一个泛型，该泛型为路由守卫保护的路由组件类型。<br>2.在resolve()方法中编写逻辑，加载数据返回或跳转等其他操作。<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Injectable</span>()</span><br><span class="line"><span class="keyword">export</span> <span class="keyword">class</span> ProductResolve <span class="keyword">implements</span> Resolve&lt;Product&gt; &#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">constructor</span>(<span class="params"><span class="keyword">private</span> router: Router</span>) &#123;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  resolve(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable&lt;Product&gt; | <span class="built_in">Promise</span>&lt;Product&gt; | Product &#123;</span><br><span class="line">    <span class="keyword">const</span> id = route.params[<span class="string">'id'</span>];</span><br><span class="line">    <span class="keyword">if</span> (id === <span class="number">1</span>) &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">new</span> Product(<span class="number">1</span>, <span class="string">'apple'</span>);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">this</span>.router.navigate([<span class="string">'/home'</span>]);</span><br><span class="line">      <span class="keyword">return</span> <span class="literal">undefined</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="使用路由守卫"><a href="#使用路由守卫" class="headerlink" title="使用路由守卫"></a>使用路由守卫</h2><p>1.在路由模块中为路由守卫提供注册器<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">providers: [LoginGuard, UnSaveGuard]</span><br></pre></td></tr></table></figure></p>
+<p>2.在对应的路由上使用路由守卫<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">&#123;path: <span class="string">'chat'</span>, component: ChatComponent,  canActivate: [LoginGuard], canDeactivate: [UnSaveGuard]&#125;</span><br><span class="line">&#123;path: <span class="string">'chat'</span>, component: ChatComponent,  canActivate: [canActivate路由守卫], canDeactivate: [canDeactivate路由守卫]&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="使用Resolve路由守卫"><a href="#使用Resolve路由守卫" class="headerlink" title="使用Resolve路由守卫"></a>使用Resolve路由守卫</h2><p>1.在路由模块中为路由守卫提供注册器<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">providers: [ProductResolve]</span><br></pre></td></tr></table></figure></p>
+<p>2.在对应的路由上使用路由守卫<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">&#123;path: <span class="string">'product/:id'</span>, component: ProductComponent, resolve: &#123;</span><br><span class="line">      product: ProductResolve</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#123;path: <span class="string">'product/:id'</span>, component: ProductComponent, resolve: &#123;</span><br><span class="line">      传递的参数名: 传递数值来源,其实就是自定义的Resolve路由守卫</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>3.接受resolve路由守卫中传递的值<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">this</span>.routeInfo.data.subscribe(<span class="function">(<span class="params">data: &#123; product: Product &#125;</span>) =&gt;</span> &#123;</span><br><span class="line">      <span class="keyword">this</span>.productId = data.product.id;</span><br><span class="line">      <span class="keyword">this</span>.productName = data.product.name;</span><br><span class="line">    &#125;);</span><br></pre></td></tr></table></figure></p>
+]]></content>
+      <categories>
+        <category>Angular</category>
+      </categories>
+      <tags>
+        <tag>编程学习</tag>
+        <tag>Angular</tag>
       </tags>
   </entry>
   <entry>
@@ -1002,6 +1058,43 @@
       </tags>
   </entry>
   <entry>
+    <title>Angular系列八：管道</title>
+    <url>/2020/03/02/Angular/5.7%E7%AE%A1%E9%81%93/</url>
+    <content><![CDATA[<h1 id="管道"><a href="#管道" class="headerlink" title="管道"></a>管道</h1><p>管道可以实现原始值到期望值的转换<br>多个管道可以链接配合使用</p>
+<h2 id="Angular常见管道"><a href="#Angular常见管道" class="headerlink" title="Angular常见管道"></a>Angular常见管道</h2><ul>
+<li>uppercase管道</li>
+<li>lowercase管道</li>
+<li>titlecase管道</li>
+<li><p>date管道</p>
+  <figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">p</span>&gt;</span>&#123;&#123;birthDay | date:'yyyy-MM-dd HH:mm:ss'&#125;&#125;<span class="tag">&lt;/<span class="name">p</span>&gt;</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>number管道</p>
+  <figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">p</span>&gt;</span>&#123;&#123;3.1415926|number:'2.1-2'&#125;&#125;<span class="tag">&lt;/<span class="name">p</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">p</span>&gt;</span>&#123;&#123;数字|number:'整数位数.最少小数位数-最多小数位数'&#125;&#125;<span class="tag">&lt;/<span class="name">p</span>&gt;</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>async管道</p>
+  <figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">p</span>&gt;</span>&#123;&#123;| aysnc&#125;&#125;<span class="tag">&lt;/<span class="name">p</span>&gt;</span> 处理异步响应流</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h2 id="自定义管道"><a href="#自定义管道" class="headerlink" title="自定义管道"></a>自定义管道</h2><p>实战：定义一个名为multiple的管道。一个数字通过该管道将返回“数字*参数”</p>
+<ol>
+<li>使用<code>ng g pipe pipe/multiple</code>生成管道</li>
+<li>在模块的@NgModule注释的declarations中声明MultiplePipe管道 </li>
+<li><p>编写管道规则</p>
+ <figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">transform(value: <span class="built_in">number</span>, args?: <span class="built_in">number</span>): <span class="built_in">any</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (!args) &#123;args = <span class="number">1</span>;&#125;</span><br><span class="line">    <span class="keyword">return</span> value * args;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>使用管道</p>
+ <figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">&lt;p&gt;&#123;&#123;<span class="number">3</span>|multiple:<span class="number">2</span>&#125;&#125;&lt;<span class="regexp">/p&gt;</span></span><br></pre></td></tr></table></figure></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Angular</category>
+      </categories>
+      <tags>
+        <tag>编程学习</tag>
+        <tag>Angular</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Angular系列七：响应式编程</title>
     <url>/2020/03/02/Angular/5.6%E5%93%8D%E5%BA%94%E5%BC%8F%E7%BC%96%E7%A8%8B/</url>
     <content><![CDATA[<h1 id="响应式编程"><a href="#响应式编程" class="headerlink" title="响应式编程"></a>响应式编程</h1><p>观察者模式<br><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">可观察对象-&gt;观察者:调用</span><br><span class="line">观察者-&gt;可观察对象:注册</span><br></pre></td></tr></table></figure></p>
@@ -1052,43 +1145,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Angular系列八：管道</title>
-    <url>/2020/03/02/Angular/5.7%E7%AE%A1%E9%81%93/</url>
-    <content><![CDATA[<h1 id="管道"><a href="#管道" class="headerlink" title="管道"></a>管道</h1><p>管道可以实现原始值到期望值的转换<br>多个管道可以链接配合使用</p>
-<h2 id="Angular常见管道"><a href="#Angular常见管道" class="headerlink" title="Angular常见管道"></a>Angular常见管道</h2><ul>
-<li>uppercase管道</li>
-<li>lowercase管道</li>
-<li>titlecase管道</li>
-<li><p>date管道</p>
-  <figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">p</span>&gt;</span>&#123;&#123;birthDay | date:'yyyy-MM-dd HH:mm:ss'&#125;&#125;<span class="tag">&lt;/<span class="name">p</span>&gt;</span></span><br></pre></td></tr></table></figure>
-</li>
-<li><p>number管道</p>
-  <figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">p</span>&gt;</span>&#123;&#123;3.1415926|number:'2.1-2'&#125;&#125;<span class="tag">&lt;/<span class="name">p</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">p</span>&gt;</span>&#123;&#123;数字|number:'整数位数.最少小数位数-最多小数位数'&#125;&#125;<span class="tag">&lt;/<span class="name">p</span>&gt;</span></span><br></pre></td></tr></table></figure>
-</li>
-<li><p>async管道</p>
-  <figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">p</span>&gt;</span>&#123;&#123;| aysnc&#125;&#125;<span class="tag">&lt;/<span class="name">p</span>&gt;</span> 处理异步响应流</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<h2 id="自定义管道"><a href="#自定义管道" class="headerlink" title="自定义管道"></a>自定义管道</h2><p>实战：定义一个名为multiple的管道。一个数字通过该管道将返回“数字*参数”</p>
-<ol>
-<li>使用<code>ng g pipe pipe/multiple</code>生成管道</li>
-<li>在模块的@NgModule注释的declarations中声明MultiplePipe管道 </li>
-<li><p>编写管道规则</p>
- <figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">transform(value: <span class="built_in">number</span>, args?: <span class="built_in">number</span>): <span class="built_in">any</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (!args) &#123;args = <span class="number">1</span>;&#125;</span><br><span class="line">    <span class="keyword">return</span> value * args;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>使用管道</p>
- <figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">&lt;p&gt;&#123;&#123;<span class="number">3</span>|multiple:<span class="number">2</span>&#125;&#125;&lt;<span class="regexp">/p&gt;</span></span><br></pre></td></tr></table></figure></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Angular</category>
-      </categories>
-      <tags>
-        <tag>编程学习</tag>
-        <tag>Angular</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Angular系列九：组件间通讯</title>
     <url>/2020/03/02/Angular/6.0%E7%BB%84%E4%BB%B6%E9%97%B4%E9%80%9A%E8%AE%AF/</url>
     <content><![CDATA[<h2 id="输入属性（父组件-→-子组件）"><a href="#输入属性（父组件-→-子组件）" class="headerlink" title="输入属性（父组件 → 子组件）"></a>输入属性（父组件 → 子组件）</h2><p>使用@Input注解可以声明一个输入属性。声明输入属性可以理解为自定义属性<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Input</span>()</span><br><span class="line">stockCode:<span class="built_in">string</span>;</span><br></pre></td></tr></table></figure></p>
@@ -1122,6 +1178,42 @@
 <p>app组件控制器代码<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">price: <span class="built_in">string</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">constructor</span>(<span class="params"></span>) &#123;&#125;</span><br><span class="line"></span><br><span class="line">onPriceChange(price: <span class="built_in">number</span>) &#123;</span><br><span class="line">  <span class="keyword">this</span>.price = price.toString();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <h2 id="中间人模式"><a href="#中间人模式" class="headerlink" title="中间人模式"></a>中间人模式</h2><p>编写组件时要考虑可重用性，要解耦。故先考虑好那些组件要重用，需要那些中间人，然后再写代码。</p>
 <p>Json.stringfy</p>
+]]></content>
+      <categories>
+        <category>Angular</category>
+      </categories>
+      <tags>
+        <tag>编程学习</tag>
+        <tag>Angular</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Angular系列十：生命钩子</title>
+    <url>/2020/03/02/Angular/6.5%E7%94%9F%E5%91%BD%E9%92%A9%E5%AD%90/</url>
+    <content><![CDATA[<p>##　组件的生命周期</p>
+<p>constructor（实例化对象）<br>Onchanges （有输入属性时被调用,且输入属性为不可变参数）初始化输入属性<br>OnInit（初始化除输入属性外其他所有属性）<br>DoCheck（做一次变更检测）<br>所有属性都应该被赋予该赋的值</p>
+<p>渲染视图<br>AfterContentInit<br>AfterContentChecked<br>子组件生命周期<br>AfterViewInit<br>AfterViewChecked<br>OnDestroy</p>
+<p>变更检测<br>Onchanges<br>DoCheck<br>AfterContentChecked<br>AfterViewChecked</p>
+<p>组件销毁<br>路由跳转时销毁</p>
+<h2 id="Onchanges"><a href="#Onchanges" class="headerlink" title="Onchanges"></a>Onchanges</h2><p>父组件初始化子组件或修改子组件的输入参数（且输入属性为不可变参数）时调用</p>
+<p>可变对象和不可变对象<br>javaScript中，字符串为不可变对象，对象为可变对象<br>console.log(JSON.strange(changes,null,2))</p>
+<h2 id="变更检测和DoCheck钩子"><a href="#变更检测和DoCheck钩子" class="headerlink" title="变更检测和DoCheck钩子"></a>变更检测和DoCheck钩子</h2><p>zone.js负责变更检测，使原生的事件<br>组件属性的模板上</p>
+<p>变更检测的2种策略<br>default策略：检测所有组件树<br>onPush策略：输入属性变化，才检测该组件及其子组件</p>
+<p>根组件开始检测<br>DoCheck钩子<br>有事件发生就会促发<br>带Check关键字的钩子，必须轻量级，否则会影响性能</p>
+<h2 id="view钩子"><a href="#view钩子" class="headerlink" title="view钩子"></a>view钩子</h2><p>viewChild装饰器<br>父组件调用子组件的方法<br><figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">app-child</span> #<span class="attr">child1</span>&gt;</span><span class="tag">&lt;<span class="name">app-child</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>控制器调用<br><figure class="highlight ts"><table><tr><td class="code"><pre><span class="line"><span class="meta">@ViewChild</span>(<span class="string">"child1"</span>)</span><br><span class="line">child1:ChildComponent;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">this</span>.child.greting(<span class="string">"Tom"</span>)</span><br></pre></td></tr></table></figure></p>
+<p>模板调用<br><figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">button</span> (<span class="attr">click</span>)=<span class="string">"child2.greting('jerry')"</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<h2 id="AfterViewInit"><a href="#AfterViewInit" class="headerlink" title="AfterViewInit"></a>AfterViewInit</h2><p>初始化时，数据和内容已组装完，且呈现给用户看之后被调用</p>
+<h2 id="AfterViewChecked"><a href="#AfterViewChecked" class="headerlink" title="AfterViewChecked"></a>AfterViewChecked</h2><p>变更检测发生时，数据和内容已组装完，且呈现给用户看之后被调用</p>
+<p>angular禁止在数据和内容已组装完，且呈现给用户看之后改变ui中绑定的值，会报错<br>使用setTImeout（（）=》{<br>​    this.message=”hello”;<br>},0）;<br>解决</p>
+<h2 id="ngContent指令"><a href="#ngContent指令" class="headerlink" title="ngContent指令"></a>ngContent指令</h2><p>父组件的任意片段投影到子组件上<br>投影<br>子组件<br><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"></span><br><span class="line">&lt;ng-content select=&quot;.header&quot;&gt;&lt;/ng-content&gt;</span><br></pre></td></tr></table></figure></p>
+<p>父组件<br><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&lt;app-child&gt;</span><br><span class="line">&lt;div class=&quot;header&quot;&gt;投影&lt;/div&gt;</span><br><span class="line">&lt;/app-child&gt;</span><br></pre></td></tr></table></figure></p>
+<p>浏览器专用<br><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&lt;div [inner-HTML]=&quot;divContent&quot;&gt;&lt;/div&gt;</span><br></pre></td></tr></table></figure></p>
+<h2 id="AfterContentInit钩子"><a href="#AfterContentInit钩子" class="headerlink" title="AfterContentInit钩子"></a>AfterContentInit钩子</h2><p>初始化时，被投影的内容组装完后被调用</p>
+<h2 id="AfterContentChecked钩子"><a href="#AfterContentChecked钩子" class="headerlink" title="AfterContentChecked钩子"></a>AfterContentChecked钩子</h2><p>变更检测时，被投影的内容组装完后被调用</p>
+<p>先父后子</p>
+<h2 id="OnDestroy钩子"><a href="#OnDestroy钩子" class="headerlink" title="OnDestroy钩子"></a>OnDestroy钩子</h2><p>路由跳转时调用<br>常用于销毁资源，如反订阅一个流，清除定时器之类的</p>
+<p>实战<br>unshift<br>this.comment.unshift(comment)</p>
 ]]></content>
       <categories>
         <category>Angular</category>
@@ -1176,42 +1268,6 @@
       <tags>
         <tag>编程学习</tag>
         <tag>Kubernetes</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Angular系列十：生命钩子</title>
-    <url>/2020/03/02/Angular/6.5%E7%94%9F%E5%91%BD%E9%92%A9%E5%AD%90/</url>
-    <content><![CDATA[<p>##　组件的生命周期</p>
-<p>constructor（实例化对象）<br>Onchanges （有输入属性时被调用,且输入属性为不可变参数）初始化输入属性<br>OnInit（初始化除输入属性外其他所有属性）<br>DoCheck（做一次变更检测）<br>所有属性都应该被赋予该赋的值</p>
-<p>渲染视图<br>AfterContentInit<br>AfterContentChecked<br>子组件生命周期<br>AfterViewInit<br>AfterViewChecked<br>OnDestroy</p>
-<p>变更检测<br>Onchanges<br>DoCheck<br>AfterContentChecked<br>AfterViewChecked</p>
-<p>组件销毁<br>路由跳转时销毁</p>
-<h2 id="Onchanges"><a href="#Onchanges" class="headerlink" title="Onchanges"></a>Onchanges</h2><p>父组件初始化子组件或修改子组件的输入参数（且输入属性为不可变参数）时调用</p>
-<p>可变对象和不可变对象<br>javaScript中，字符串为不可变对象，对象为可变对象<br>console.log(JSON.strange(changes,null,2))</p>
-<h2 id="变更检测和DoCheck钩子"><a href="#变更检测和DoCheck钩子" class="headerlink" title="变更检测和DoCheck钩子"></a>变更检测和DoCheck钩子</h2><p>zone.js负责变更检测，使原生的事件<br>组件属性的模板上</p>
-<p>变更检测的2种策略<br>default策略：检测所有组件树<br>onPush策略：输入属性变化，才检测该组件及其子组件</p>
-<p>根组件开始检测<br>DoCheck钩子<br>有事件发生就会促发<br>带Check关键字的钩子，必须轻量级，否则会影响性能</p>
-<h2 id="view钩子"><a href="#view钩子" class="headerlink" title="view钩子"></a>view钩子</h2><p>viewChild装饰器<br>父组件调用子组件的方法<br><figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">app-child</span> #<span class="attr">child1</span>&gt;</span><span class="tag">&lt;<span class="name">app-child</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
-<p>控制器调用<br><figure class="highlight ts"><table><tr><td class="code"><pre><span class="line"><span class="meta">@ViewChild</span>(<span class="string">"child1"</span>)</span><br><span class="line">child1:ChildComponent;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">this</span>.child.greting(<span class="string">"Tom"</span>)</span><br></pre></td></tr></table></figure></p>
-<p>模板调用<br><figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">button</span> (<span class="attr">click</span>)=<span class="string">"child2.greting('jerry')"</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
-<h2 id="AfterViewInit"><a href="#AfterViewInit" class="headerlink" title="AfterViewInit"></a>AfterViewInit</h2><p>初始化时，数据和内容已组装完，且呈现给用户看之后被调用</p>
-<h2 id="AfterViewChecked"><a href="#AfterViewChecked" class="headerlink" title="AfterViewChecked"></a>AfterViewChecked</h2><p>变更检测发生时，数据和内容已组装完，且呈现给用户看之后被调用</p>
-<p>angular禁止在数据和内容已组装完，且呈现给用户看之后改变ui中绑定的值，会报错<br>使用setTImeout（（）=》{<br>​    this.message=”hello”;<br>},0）;<br>解决</p>
-<h2 id="ngContent指令"><a href="#ngContent指令" class="headerlink" title="ngContent指令"></a>ngContent指令</h2><p>父组件的任意片段投影到子组件上<br>投影<br>子组件<br><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"></span><br><span class="line">&lt;ng-content select=&quot;.header&quot;&gt;&lt;/ng-content&gt;</span><br></pre></td></tr></table></figure></p>
-<p>父组件<br><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&lt;app-child&gt;</span><br><span class="line">&lt;div class=&quot;header&quot;&gt;投影&lt;/div&gt;</span><br><span class="line">&lt;/app-child&gt;</span><br></pre></td></tr></table></figure></p>
-<p>浏览器专用<br><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&lt;div [inner-HTML]=&quot;divContent&quot;&gt;&lt;/div&gt;</span><br></pre></td></tr></table></figure></p>
-<h2 id="AfterContentInit钩子"><a href="#AfterContentInit钩子" class="headerlink" title="AfterContentInit钩子"></a>AfterContentInit钩子</h2><p>初始化时，被投影的内容组装完后被调用</p>
-<h2 id="AfterContentChecked钩子"><a href="#AfterContentChecked钩子" class="headerlink" title="AfterContentChecked钩子"></a>AfterContentChecked钩子</h2><p>变更检测时，被投影的内容组装完后被调用</p>
-<p>先父后子</p>
-<h2 id="OnDestroy钩子"><a href="#OnDestroy钩子" class="headerlink" title="OnDestroy钩子"></a>OnDestroy钩子</h2><p>路由跳转时调用<br>常用于销毁资源，如反订阅一个流，清除定时器之类的</p>
-<p>实战<br>unshift<br>this.comment.unshift(comment)</p>
-]]></content>
-      <categories>
-        <category>Angular</category>
-      </categories>
-      <tags>
-        <tag>编程学习</tag>
-        <tag>Angular</tag>
       </tags>
   </entry>
   <entry>
@@ -1277,37 +1333,6 @@
 <p>formControl不能用在formGroup的内部<br>[fromControl]=””</p>
 <p>formbuilder<br>formBuilder简化了响应式表单中模型定义语法<br>注入fb：FormBuilder<br>“ fb.array ” 代替 “new FormGroup”<br>“ fb.array ” 代替 “new FormArray”<br>“ fb.control ” 代替 “new FormControler”<br>“ [‘ ‘] ”替代formGroup下的“new FormControler”</p>
 <p>fb.array可以传入额外的参数检验formGroup<br>[‘ ‘]参数：[‘初始值’，检验方式，’异步校验方法]</p>
-]]></content>
-      <categories>
-        <category>Angular</category>
-      </categories>
-      <tags>
-        <tag>编程学习</tag>
-        <tag>Angular</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Angular系列五：路由守卫</title>
-    <url>/2020/03/02/Angular/3.5%E8%B7%AF%E7%94%B1%E5%AE%88%E5%8D%AB/</url>
-    <content><![CDATA[<p>##　路由守卫</p>
-<p>拥有权限才进入路由</p>
-<h2 id="常见的路由守卫如下："><a href="#常见的路由守卫如下：" class="headerlink" title="常见的路由守卫如下："></a>常见的路由守卫如下：</h2><ul>
-<li>CanActivate：进入路由前促发，当条件不满足时，无法进入该路由</li>
-<li>CanDeactivate：从当前路由离开时促发，当条件不满足时，无法离开路由</li>
-<li>Resolve：在路由激活之前获取路由数据</li>
-</ul>
-<p>CanActivate<br>CanActivate的值为一个数组，数组中可以添加多个路由守卫，只有当所有的路由守卫都通过时，才可以进入路由。</p>
-<p>CanDeactivate<br>CanActivate的值为一个数组，数组中可以添加多个路由守卫，只有当所有的路由守卫都通过时，才可以促发导航。</p>
-<p>Resolve<br>Resolve会在进入路由前促发，负责加载信息，当信息加载后再进入路由。如果加载不到想要的信息时，可以根据要求进行处理，如发出提示，或跳转其他路由。Resolve传递的值是一个对象，对象的属性为需要传递的参数，属性值为自定义的Resolve路由守卫。</p>
-<h2 id="自定义CanActivate路由守卫login-guard-ts"><a href="#自定义CanActivate路由守卫login-guard-ts" class="headerlink" title="自定义CanActivate路由守卫login.guard.ts"></a>自定义CanActivate路由守卫login.guard.ts</h2><p>1.新建继承CanActivate接口的LoginGuard类，实现canActivate()方法。<br>2.在canActivate()方法中编写逻辑，当canActivate()方法返回为true时，允许进入路由，反之，当canActivate()方法返回为false时，不允许进入路由。</p>
-<figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="keyword">class</span> LoginGuard <span class="keyword">implements</span> CanActivate &#123;</span><br><span class="line"></span><br><span class="line">  canActivate(): <span class="built_in">boolean</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">Math</span>.random() &gt; <span class="number">0.5</span>) &#123;</span><br><span class="line">      <span class="built_in">console</span>.log(<span class="string">'用户已成功，正在导航'</span>);</span><br><span class="line">      <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="built_in">console</span>.log(<span class="string">'用户未登录'</span>);</span><br><span class="line">      <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="自定义CanDeactivate路由守卫unsave-guard-ts"><a href="#自定义CanDeactivate路由守卫unsave-guard-ts" class="headerlink" title="自定义CanDeactivate路由守卫unsave.guard.ts"></a>自定义CanDeactivate路由守卫unsave.guard.ts</h2><p>1.新建继承CanDeactivate接口的UnSaveGuard类，实现canDeactivate()方法。CanDeactivate接口中需要指定一个泛型，该泛型为路由守卫保护的路由组件类型。<br>2.在canDeactivate()方法中编写逻辑，当canDeactivate()方法返回为true时，允许离开路由，反之，当canDeactivate()方法返回为false时，不允许离开路由。<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="keyword">class</span> UnSaveGuard <span class="keyword">implements</span> CanDeactivate&lt;ProductComponent&gt; &#123;</span><br><span class="line"></span><br><span class="line">  canDeactivate(component: ProductComponent): <span class="built_in">boolean</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">window</span>.confirm(<span class="string">'内容还未保存，确定离开吗？'</span>);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<h2 id="自定义Resolve路由守卫product-resolve-ts"><a href="#自定义Resolve路由守卫product-resolve-ts" class="headerlink" title="自定义Resolve路由守卫product.resolve.ts"></a>自定义Resolve路由守卫product.resolve.ts</h2><p>1.新建继承Resolve接口的ProductResolve类，实现resolve()方法。Resolve接口中需要指定一个泛型，该泛型为路由守卫保护的路由组件类型。<br>2.在resolve()方法中编写逻辑，加载数据返回或跳转等其他操作。<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Injectable</span>()</span><br><span class="line"><span class="keyword">export</span> <span class="keyword">class</span> ProductResolve <span class="keyword">implements</span> Resolve&lt;Product&gt; &#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">constructor</span>(<span class="params"><span class="keyword">private</span> router: Router</span>) &#123;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  resolve(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable&lt;Product&gt; | <span class="built_in">Promise</span>&lt;Product&gt; | Product &#123;</span><br><span class="line">    <span class="keyword">const</span> id = route.params[<span class="string">'id'</span>];</span><br><span class="line">    <span class="keyword">if</span> (id === <span class="number">1</span>) &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">new</span> Product(<span class="number">1</span>, <span class="string">'apple'</span>);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">this</span>.router.navigate([<span class="string">'/home'</span>]);</span><br><span class="line">      <span class="keyword">return</span> <span class="literal">undefined</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<h2 id="使用路由守卫"><a href="#使用路由守卫" class="headerlink" title="使用路由守卫"></a>使用路由守卫</h2><p>1.在路由模块中为路由守卫提供注册器<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">providers: [LoginGuard, UnSaveGuard]</span><br></pre></td></tr></table></figure></p>
-<p>2.在对应的路由上使用路由守卫<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">&#123;path: <span class="string">'chat'</span>, component: ChatComponent,  canActivate: [LoginGuard], canDeactivate: [UnSaveGuard]&#125;</span><br><span class="line">&#123;path: <span class="string">'chat'</span>, component: ChatComponent,  canActivate: [canActivate路由守卫], canDeactivate: [canDeactivate路由守卫]&#125;</span><br></pre></td></tr></table></figure></p>
-<h2 id="使用Resolve路由守卫"><a href="#使用Resolve路由守卫" class="headerlink" title="使用Resolve路由守卫"></a>使用Resolve路由守卫</h2><p>1.在路由模块中为路由守卫提供注册器<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">providers: [ProductResolve]</span><br></pre></td></tr></table></figure></p>
-<p>2.在对应的路由上使用路由守卫<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line">&#123;path: <span class="string">'product/:id'</span>, component: ProductComponent, resolve: &#123;</span><br><span class="line">      product: ProductResolve</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#123;path: <span class="string">'product/:id'</span>, component: ProductComponent, resolve: &#123;</span><br><span class="line">      传递的参数名: 传递数值来源,其实就是自定义的Resolve路由守卫</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>3.接受resolve路由守卫中传递的值<br><figure class="highlight typescript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">this</span>.routeInfo.data.subscribe(<span class="function">(<span class="params">data: &#123; product: Product &#125;</span>) =&gt;</span> &#123;</span><br><span class="line">      <span class="keyword">this</span>.productId = data.product.id;</span><br><span class="line">      <span class="keyword">this</span>.productName = data.product.name;</span><br><span class="line">    &#125;);</span><br></pre></td></tr></table></figure></p>
 ]]></content>
       <categories>
         <category>Angular</category>
